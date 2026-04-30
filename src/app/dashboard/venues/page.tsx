@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Building2, Search, Filter, MapPin, Settings, X, 
-  Map, Users, Info, PowerOff, Edit3, Car, Navigation
+  Map, Users, Info, PowerOff, Edit3, Car, Navigation,
+  Plus, Check, Loader2
 } from "lucide-react";
 
 // Types
@@ -40,6 +41,27 @@ export default function VenuesPage() {
   const [tempDressCode, setTempDressCode] = useState("");
   const [tempParking, setTempParking] = useState("");
 
+  // Add Venue State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+  const [newVenueData, setNewVenueData] = useState({
+    name: "", clientId: "", address: "", gps: "", instructions: "", dressCode: "", parkingInfo: ""
+  });
+
+  const getAuthHeaders = () => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return {
+      'x-user-email': user.email || 'admin@example.com',
+      'x-user-id': user.id || 'U-001'
+    };
+  };
+
+  useEffect(() => {
+    fetch('/api/venues').then(res => res.json()).then(data => setVenues(Array.isArray(data) ? data : []));
+    fetch('/api/clients').then(res => res.json()).then(data => setClients(Array.isArray(data) ? data : []));
+  }, []);
+
   // Derived State
   const filteredVenues = useMemo(() => {
     return venues.filter(v => {
@@ -59,20 +81,36 @@ export default function VenuesPage() {
   const selectedVenue = venues.find(v => v.id === selectedVenueId);
 
   // Actions
-  const toggleDeactivate = (id: string) => {
-    setVenues(venues.map(v => v.id === id ? { ...v, status: v.status === "Active" ? "Deactivated" : "Active" } : v));
+  const toggleDeactivate = async (id: string) => {
+    const venue = venues.find(v => v.id === id);
+    if (!venue) return;
+    const newStatus = venue.status === "Active" ? "Deactivated" : "Active";
+    try {
+      const res = await fetch('/api/venues', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...venue, status: newStatus })
+      });
+      if (res.ok) {
+        setVenues(venues.map(v => v.id === id ? { ...v, status: newStatus } : v));
+      }
+    } catch (e) {}
   };
 
-  const toggleDepartment = (venueId: string, deptName: string) => {
-    setVenues(venues.map(v => {
-      if (v.id === venueId) {
-        return {
-          ...v,
-          departments: v.departments.map(d => d.name === deptName ? { ...d, active: !d.active } : d)
-        };
+  const toggleDepartment = async (venueId: string, deptName: string) => {
+    const venue = venues.find(v => v.id === venueId);
+    if (!venue) return;
+    const updatedDepts = venue.departments.map(d => d.name === deptName ? { ...d, active: !d.active } : d);
+    try {
+      const res = await fetch('/api/venues', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...venue, departments: updatedDepts })
+      });
+      if (res.ok) {
+        setVenues(venues.map(v => v.id === venueId ? { ...v, departments: updatedDepts } : v));
       }
-      return v;
-    }));
+    } catch (e) {}
   };
 
   const startEditingNotes = () => {
@@ -83,20 +121,53 @@ export default function VenuesPage() {
     setEditingNotes(true);
   };
 
-  const saveNotes = () => {
+  const saveNotes = async () => {
     if (!selectedVenue) return;
-    setVenues(venues.map(v => {
-      if (v.id === selectedVenue.id) {
-        return {
-          ...v,
-          instructions: tempInstructions,
-          dressCode: tempDressCode,
-          parkingInfo: tempParking
-        };
+    const updates = {
+      instructions: tempInstructions,
+      dressCode: tempDressCode,
+      parkingInfo: tempParking
+    };
+    try {
+      const res = await fetch('/api/venues', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...selectedVenue, ...updates })
+      });
+      if (res.ok) {
+        setVenues(venues.map(v => v.id === selectedVenue.id ? { ...v, ...updates } : v));
+        setEditingNotes(false);
       }
-      return v;
-    }));
-    setEditingNotes(false);
+    } catch (e) {}
+  };
+
+  const handleAddVenue = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    const client = clients.find(c => c.id === newVenueData.clientId);
+    const venueToSave = {
+      ...newVenueData,
+      clientName: client?.name || "Unknown Client",
+      departments: [
+        { name: "Front of House", active: true },
+        { name: "Back of House", active: true },
+        { name: "Security", active: true }
+      ]
+    };
+    try {
+      const res = await fetch('/api/venues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(venueToSave)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setVenues([...venues, added]);
+        setIsAddModalOpen(false);
+        setNewVenueData({ name: "", clientId: "", address: "", gps: "", instructions: "", dressCode: "", parkingInfo: "" });
+      }
+    } catch (e) {}
+    finally { setIsAdding(false); }
   };
 
   return (
@@ -106,8 +177,11 @@ export default function VenuesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Venue Management</h1>
           <p className="text-foreground/70 mt-1">Manage physical locations, instructions, and department availability.</p>
         </div>
-        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all">
-          + Add New Venue
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" /> Add New Venue
         </button>
       </div>
 
@@ -372,6 +446,48 @@ export default function VenuesPage() {
                 </div>
 
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ADD VENUE MODAL */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddModalOpen(false)} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-background border border-secondary shadow-2xl rounded-3xl z-[70] overflow-hidden">
+              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
+                <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> Register New Venue</h2>
+                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleAddVenue} className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">VENUE NAME</label>
+                  <input required type="text" value={newVenueData.name} onChange={e => setNewVenueData({...newVenueData, name: e.target.value})} placeholder="e.g. Downtown Flagship" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">ASSOCIATED CLIENT</label>
+                  <select required value={newVenueData.clientId} onChange={e => setNewVenueData({...newVenueData, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors">
+                    <option value="">Select a Client...</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">STREET ADDRESS</label>
+                  <input required type="text" value={newVenueData.address} onChange={e => setNewVenueData({...newVenueData, address: e.target.value})} placeholder="Full address..." className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">GPS COORDINATES (Optional)</label>
+                  <input type="text" value={newVenueData.gps} onChange={e => setNewVenueData({...newVenueData, gps: e.target.value})} placeholder="43.64, -79.39" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 border border-secondary rounded-xl font-bold hover:bg-secondary/50 transition-colors">Cancel</button>
+                  <button type="submit" disabled={isAdding} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                    {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Register Venue</>}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}

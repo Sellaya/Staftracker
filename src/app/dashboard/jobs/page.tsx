@@ -258,6 +258,14 @@ export default function JobsManagement() {
   const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOBS);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<JobStatus | "All">("All");
+
+  const getAuthHeaders = () => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return {
+      'x-user-email': user.email || 'admin@example.com',
+      'x-user-id': user.id || 'U-001'
+    };
+  };
   
   // Selection State
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
@@ -316,7 +324,7 @@ export default function JobsManagement() {
     try {
       await fetch('/api/jobs', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(updatedForm)
       });
     } catch (e) {
@@ -361,7 +369,7 @@ export default function JobsManagement() {
     try {
       const res = await fetch('/api/jobs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(newJob)
       });
       if (res.ok) {
@@ -386,7 +394,7 @@ export default function JobsManagement() {
     if (targetJob) {
       const updated = { ...targetJob, status: "Filled" as JobStatus, assignedWorkerId: worker.id, assignedWorkerName: worker.name };
       try {
-        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(updated) });
       } catch (e) {}
     }
 
@@ -405,7 +413,7 @@ export default function JobsManagement() {
     if (targetJob) {
       const updated = { ...targetJob, status: "Open" as JobStatus, assignedWorkerId: null, assignedWorkerName: null };
       try {
-        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(updated) });
       } catch (e) {}
     }
 
@@ -424,7 +432,7 @@ export default function JobsManagement() {
     if (targetJob) {
       const updated = { ...targetJob, status: "Cancelled" as JobStatus };
       try {
-        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(updated) });
       } catch (e) {}
     }
 

@@ -139,19 +139,46 @@ export default function WorkersPage() {
   };
 
   // Notes Actions
-  const addNote = (id: string) => {
+  const addNote = async (id: string) => {
     if (!newNote.trim()) return;
+    const worker = workers.find(w => w.id === id);
+    if (!worker) return;
+
     const noteObj: Note = {
       id: Math.random().toString(36).substring(7),
       text: newNote.trim(),
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     };
-    setWorkers(workers.map(w => w.id === id ? { ...w, notes: [noteObj, ...w.notes] } : w));
-    setNewNote("");
+    
+    const updatedNotes = [noteObj, ...worker.notes];
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...worker, notes: updatedNotes })
+      });
+      if (res.ok) {
+        setWorkers(workers.map(w => w.id === id ? { ...w, notes: updatedNotes } : w));
+        setNewNote("");
+      }
+    } catch (e) { console.error(e); }
   };
 
-  const deleteNote = (workerId: string, noteId: string) => {
-    setWorkers(workers.map(w => w.id === workerId ? { ...w, notes: w.notes.filter((n: any) => n.id !== noteId) } : w));
+  const deleteNote = async (workerId: string, noteId: string) => {
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) return;
+
+    const updatedNotes = worker.notes.filter((n: any) => n.id !== noteId);
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...worker, notes: updatedNotes })
+      });
+      if (res.ok) {
+        setWorkers(workers.map(w => w.id === workerId ? { ...w, notes: updatedNotes } : w));
+      }
+    } catch (e) { console.error(e); }
   };
 
   const startEditNote = (note: Note) => {
@@ -159,16 +186,24 @@ export default function WorkersPage() {
     setEditingNoteText(note.text);
   };
 
-  const saveEditNote = (workerId: string) => {
+  const saveEditNote = async (workerId: string) => {
     if (!editingNoteText.trim()) return;
-    setWorkers(workers.map(w => {
-      if (w.id === workerId) {
-        return { ...w, notes: w.notes.map((n: any) => n.id === editingNoteId ? { ...n, text: editingNoteText.trim() } : n) };
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) return;
+
+    const updatedNotes = worker.notes.map((n: any) => n.id === editingNoteId ? { ...n, text: editingNoteText.trim() } : n);
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...worker, notes: updatedNotes })
+      });
+      if (res.ok) {
+        setWorkers(workers.map(w => w.id === workerId ? { ...w, notes: updatedNotes } : w));
+        setEditingNoteId(null);
+        setEditingNoteText("");
       }
-      return w;
-    }));
-    setEditingNoteId(null);
-    setEditingNoteText("");
+    } catch (e) { console.error(e); }
   };
 
   const overrideRole = async (id: string, role: string) => {

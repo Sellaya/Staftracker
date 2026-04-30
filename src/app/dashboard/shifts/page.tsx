@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   CalendarDays, Search, Filter, MapPin, X, 
   Clock, UserCircle, AlertTriangle, CheckCircle2, 
-  Navigation, RefreshCcw, Ban, Edit3, Flag, Check
+  Navigation, RefreshCcw, Ban, Edit3, Flag, Check,
+  Loader2
 } from "lucide-react";
 
 // Types
@@ -47,6 +48,18 @@ export default function ShiftsPage() {
   const [flagModalOpen, setFlagModalOpen] = useState(false);
   const [flagReason, setFlagReason] = useState("");
 
+  const getAuthHeaders = () => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return {
+      'x-user-email': user.email || 'admin@example.com',
+      'x-user-id': user.id || 'U-001'
+    };
+  };
+
+  useEffect(() => {
+    fetch('/api/shifts').then(res => res.json()).then(data => setShifts(Array.isArray(data) ? data : []));
+  }, []);
+
   // Derived State
   const filteredShifts = useMemo(() => {
     return shifts.filter(s => {
@@ -69,40 +82,50 @@ export default function ShiftsPage() {
   const selectedShift = shifts.find(s => s.id === selectedShiftId);
 
   // Actions
+  const updateShift = async (id: string, updates: any) => {
+    const shift = shifts.find(s => s.id === id);
+    if (!shift) return;
+    try {
+      const res = await fetch('/api/shifts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...shift, ...updates })
+      });
+      if (res.ok) {
+        setShifts(shifts.map(s => s.id === id ? { ...s, ...updates } : s));
+      }
+    } catch (e) {}
+  };
+
   const cancelShift = (id: string) => {
-    setShifts(shifts.map(s => s.id === id ? { ...s, status: "Cancelled", workerName: undefined, workerId: undefined } : s));
+    if (!confirm("Cancel this shift? The worker and client will be notified.")) return;
+    updateShift(id, { status: "Cancelled", workerName: undefined, workerId: undefined });
     setSelectedShiftId(null);
   };
 
   const reassignWorker = (id: string) => {
-    // Mocking reassignment
-    setShifts(shifts.map(s => s.id === id ? { ...s, workerName: "Pending New Assignment", workerId: undefined, gpsStatus: "Pending", actualCheckIn: undefined } : s));
+    updateShift(id, { workerName: "Pending New Assignment", workerId: undefined, gpsStatus: "Pending", actualCheckIn: undefined });
   };
 
   const submitFlag = () => {
     if (!selectedShift || !flagReason.trim()) return;
-    setShifts(shifts.map(s => s.id === selectedShift.id ? { ...s, isFlagged: true, flagReason } : s));
+    updateShift(selectedShift.id, { isFlagged: true, flagReason });
     setFlagModalOpen(false);
     setFlagReason("");
   };
 
   const resolveFlag = (id: string) => {
-    setShifts(shifts.map(s => s.id === id ? { ...s, isFlagged: false, flagReason: undefined } : s));
+    updateShift(id, { isFlagged: false, flagReason: undefined });
   };
 
   const saveTimeOverride = () => {
     if (!selectedShift) return;
-    setShifts(shifts.map(s => {
-      if (s.id === selectedShift.id) {
-        return { 
-          ...s, 
-          actualCheckIn: tempCheckIn || s.actualCheckIn, 
-          actualCheckOut: tempCheckOut || s.actualCheckOut,
-          gpsStatus: "Verified" // Overriding inherently verifies the manual entry
-        };
-      }
-      return s;
-    }));
+    const updates = { 
+      actualCheckIn: tempCheckIn || selectedShift.actualCheckIn, 
+      actualCheckOut: tempCheckOut || selectedShift.actualCheckOut,
+      gpsStatus: "Verified"
+    };
+    updateShift(selectedShift.id, updates);
     setEditingTimes(false);
   };
 
