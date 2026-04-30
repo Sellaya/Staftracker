@@ -126,8 +126,8 @@ export default function ShiftsPage() {
     <div className="max-w-7xl mx-auto space-y-8 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Shift Oversight</h1>
-          <p className="text-foreground/70 mt-1">Monitor live field operations, check-ins, and resolve shift disputes.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Active Shifts & Field Ops</h1>
+          <p className="text-foreground/70 mt-1">Monitor live field operations and check-ins.</p>
         </div>
         <button className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all">
           + Create Shift

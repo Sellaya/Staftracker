@@ -19,7 +19,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Venues", href: "/dashboard/venues", icon: MapPin },
     { name: "Shifts", href: "/dashboard/shifts", icon: CalendarDays },
     { name: "Documents", href: "/dashboard/documents", icon: FileCheck2 },
-    { name: "Disputes", href: "/dashboard/disputes", icon: AlertTriangle },
     { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
     { name: "AI Matchmaking", href: "/dashboard/ai", icon: BrainCircuit },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
