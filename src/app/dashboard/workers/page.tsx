@@ -6,7 +6,7 @@ import {
   Search, Filter, ShieldCheck, AlertCircle, 
   X, UserCircle, Star, History, DollarSign, 
   FileText, ShieldAlert, Edit3, Trash2, Check, X as CancelIcon,
-  ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight
+  Plus, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 // Types
@@ -36,6 +36,29 @@ export default function WorkersPage() {
   const [newNote, setNewNote] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
+
+  // Add Worker State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newWorkerData, setNewWorkerData] = useState({
+    name: "", email: "", phone: "", address: "", roles: [] as string[]
+  });
+
+  // Fetch Workers
+  useEffect(() => {
+    fetch('/api/workers')
+      .then(res => res.json())
+      .then(data => setWorkers(Array.isArray(data) ? data : []))
+      .catch(console.error);
+  }, []);
+
+  const getAuthHeaders = () => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return {
+      'x-user-email': user.email || 'admin@example.com',
+      'x-user-id': user.id || 'U-001'
+    };
+  };
 
   // Accessibility: Close modal on Esc
   useEffect(() => {
@@ -105,11 +128,14 @@ export default function WorkersPage() {
   };
 
   const toggleSuspend = (id: string) => {
-    setWorkers(workers.map(w => w.id === id ? { ...w, status: w.status === "Active" ? "Suspended" : "Active" } : w));
+    const worker = workers.find(w => w.id === id);
+    if (worker) {
+      updateWorkerStatus(id, { status: worker.status === "Active" ? "Suspended" : "Active" });
+    }
   };
 
   const approveDocuments = (id: string) => {
-    setWorkers(workers.map(w => w.id === id ? { ...w, documentStatus: "Approved" } : w));
+    updateWorkerStatus(id, { documentStatus: "Approved" });
   };
 
   // Notes Actions
@@ -145,16 +171,75 @@ export default function WorkersPage() {
     setEditingNoteText("");
   };
 
-  const overrideRole = (id: string, role: string) => {
-    setWorkers(workers.map(w => {
-      if (w.id === id) {
-        const overrides = w.roleOverrides.includes(role) 
-          ? w.roleOverrides.filter((r: any) => r !== role)
-          : [...w.roleOverrides, role];
-        return { ...w, roleOverrides: overrides };
+  const overrideRole = async (id: string, role: string) => {
+    const worker = workers.find(w => w.id === id);
+    if (!worker) return;
+    
+    const overrides = worker.roleOverrides.includes(role) 
+      ? worker.roleOverrides.filter((r: any) => r !== role)
+      : [...worker.roleOverrides, role];
+      
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...worker, roleOverrides: overrides })
+      });
+      if (res.ok) {
+        setWorkers(workers.map(w => w.id === id ? { ...w, roleOverrides: overrides } : w));
       }
-      return w;
-    }));
+    } catch (e) { console.error(e); }
+  };
+
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(newWorkerData)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setWorkers([...workers, added]);
+        setIsAddModalOpen(false);
+        setNewWorkerData({ name: "", email: "", phone: "", address: "", roles: [] });
+      }
+    } catch (e) { console.error(e); }
+    finally { setIsAdding(false); }
+  };
+
+  const handleDeleteWorker = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this worker? This action is irreversible.")) return;
+    try {
+      const res = await fetch(`/api/workers?id=${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        setWorkers(workers.filter(w => w.id !== id));
+        setSelectedWorkerId(null);
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete worker");
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const updateWorkerStatus = async (id: string, updates: any) => {
+    const worker = workers.find(w => w.id === id);
+    if (!worker) return;
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...worker, ...updates })
+      });
+      if (res.ok) {
+        setWorkers(workers.map(w => w.id === id ? { ...w, ...updates } : w));
+      }
+    } catch (e) { console.error(e); }
   };
 
   const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
@@ -169,6 +254,12 @@ export default function WorkersPage() {
           <h1 className="text-3xl font-bold tracking-tight">Worker Management</h1>
           <p className="text-foreground/70 mt-1">Manage shift staff, review documents, and track reliability.</p>
         </div>
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all"
+        >
+          <Plus className="w-5 h-5" /> Add New Worker
+        </button>
       </div>
 
       <div className="glass rounded-2xl bg-background/50 border border-secondary flex flex-col overflow-hidden">
@@ -427,16 +518,24 @@ export default function WorkersPage() {
                         </div>
                         <div>
                           <h4 className="text-xs font-bold text-foreground/50 mb-1">ACTIONS</h4>
-                          <button 
-                            onClick={() => toggleSuspend(selectedWorker.id)}
-                            className={`w-full py-2 rounded-lg text-sm font-bold border transition-colors ${
-                              selectedWorker.status === "Active" 
-                                ? "border-red-500/50 text-red-500 hover:bg-red-500/10" 
-                                : "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
-                            }`}
-                          >
-                            {selectedWorker.status === "Active" ? "Suspend Worker" : "Unsuspend Worker"}
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <button 
+                              onClick={() => toggleSuspend(selectedWorker.id)}
+                              className={`w-full py-2 rounded-lg text-sm font-bold border transition-colors ${
+                                selectedWorker.status === "Active" 
+                                  ? "border-red-500/50 text-red-500 hover:bg-red-500/10" 
+                                  : "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
+                              }`}
+                            >
+                              {selectedWorker.status === "Active" ? "Suspend Worker" : "Unsuspend Worker"}
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteWorker(selectedWorker.id)}
+                              className="w-full py-2 rounded-lg text-sm font-bold border border-red-500 bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" /> Delete Worker Profile
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -592,6 +691,84 @@ export default function WorkersPage() {
                   </div>
                 )}
               </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ADD WORKER MODAL */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAddModalOpen(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-background border border-secondary shadow-2xl rounded-3xl z-[70] overflow-hidden"
+            >
+              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-primary" /> Onboard New Worker
+                </h2>
+                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleAddWorker} className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">FULL NAME</label>
+                  <input required type="text" value={newWorkerData.name} onChange={e => setNewWorkerData({...newWorkerData, name: e.target.value})} placeholder="e.g. John Doe" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-foreground/70">EMAIL ADDRESS</label>
+                    <input required type="email" value={newWorkerData.email} onChange={e => setNewWorkerData({...newWorkerData, email: e.target.value})} placeholder="john@example.com" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-foreground/70">PHONE NUMBER</label>
+                    <input required type="tel" value={newWorkerData.phone} onChange={e => setNewWorkerData({...newWorkerData, phone: e.target.value})} placeholder="(416) 000-0000" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">RESIDENTIAL ADDRESS</label>
+                  <input required type="text" value={newWorkerData.address} onChange={e => setNewWorkerData({...newWorkerData, address: e.target.value})} placeholder="123 Street Name, Toronto" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">INITIAL ROLES (Select multiple)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Bartender", "Server", "Chef", "Security", "General Labor"].map(role => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => {
+                          const roles = newWorkerData.roles.includes(role) 
+                            ? newWorkerData.roles.filter(r => r !== role) 
+                            : [...newWorkerData.roles, role];
+                          setNewWorkerData({...newWorkerData, roles});
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                          newWorkerData.roles.includes(role) ? "bg-primary border-primary text-white" : "border-secondary hover:border-primary/50"
+                        }`}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 border border-secondary rounded-xl font-bold hover:bg-secondary/50 transition-colors">Cancel</button>
+                  <button type="submit" disabled={isAdding} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                    {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Save Worker</>}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}
