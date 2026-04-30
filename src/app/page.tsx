@@ -25,7 +25,7 @@ export default function LandingPage() {
           <Link href="/login/worker" className="px-6 py-2.5 rounded-full border border-primary/50 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
             Worker Login
           </Link>
-          <Link href="/dashboard" className="px-6 py-2.5 rounded-full border border-secondary text-sm font-bold hover:bg-secondary/50 transition-colors">
+          <Link href="/login/admin" className="px-6 py-2.5 rounded-full border border-secondary text-sm font-bold hover:bg-secondary/50 transition-colors">
             Admin Login
           </Link>
         </div>

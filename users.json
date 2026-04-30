@@ -7,6 +7,14 @@
       "password": "password",
       "role": "super_admin",
       "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "name": "shan",
+      "email": "shan@gmail.com",
+      "password": "12345",
+      "role": "manager",
+      "id": "U-95111",
+      "createdAt": "2026-04-30T04:51:37.184Z"
     }
   ]
 }

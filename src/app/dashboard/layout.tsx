@@ -6,10 +6,29 @@ import {
   AlertTriangle, BarChart3, BrainCircuit, Briefcase 
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      router.push("/login/admin");
+    } else {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login/admin");
+  };
+
+  if (!user) return null; // Prevent flicker before redirect
 
   const navigation = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -58,7 +77,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div className="p-4 border-t border-secondary/50">
-          <button className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-foreground/70 hover:bg-secondary/50 hover:text-foreground transition-all font-medium">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-500/10 transition-all font-medium"
+          >
             <LogOut className="w-5 h-5" />
             Log out
           </button>
@@ -78,7 +100,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent p-0.5">
               <div className="w-full h-full rounded-full bg-background flex items-center justify-center border-2 border-background">
-                <span className="font-bold text-sm">US</span>
+                <span className="font-bold text-sm">
+                  {user.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'AD'}
+                </span>
               </div>
             </div>
           </div>
