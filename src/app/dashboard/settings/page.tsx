@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Shield, Bell, CreditCard, Puzzle, 
   Save, Key, CheckCircle2, AlertCircle, Smartphone, 
-  Mail, Globe, Moon, Sun, Lock
+  Mail, Globe, Moon, Sun, Lock, Users, Plus, Trash2, History
 } from "lucide-react";
 
 export default function Settings() {
@@ -29,13 +29,84 @@ export default function Settings() {
     }, 1500);
   };
 
+  const [teamUsers, setTeamUsers] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "manager" });
+
+  useEffect(() => {
+    fetch('/api/users')
+      .then(res => res.json())
+      .then(data => setTeamUsers(Array.isArray(data) ? data : []))
+      .catch(console.error);
+
+    fetch('/api/audit')
+      .then(res => res.json())
+      .then(data => setAuditLogs(Array.isArray(data) ? data : []))
+      .catch(console.error);
+  }, []);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingUser(true);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        body: JSON.stringify(newUser),
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
+          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
+        }
+      });
+      if (res.ok) {
+        const createdUser = await res.json();
+        setTeamUsers([...teamUsers, createdUser]);
+        setNewUser({ name: "", email: "", password: "", role: "manager" });
+      } else {
+        alert("Failed to create user. Email may already exist.");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAddingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!confirm("Delete this user?")) return;
+    try {
+      const res = await fetch(`/api/users?id=${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
+          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
+        }
+      });
+      if (res.ok) {
+        setTeamUsers(teamUsers.filter(u => u.id !== id));
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete user");
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const tabs = [
     { id: "general", label: "General", icon: User },
+    { id: "team", label: "Team & Roles", icon: Users, restricted: true },
+    { id: "audit", label: "Audit Logs", icon: History, restricted: true },
     { id: "security", label: "Security", icon: Shield },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "billing", label: "Billing & Plans", icon: CreditCard },
     { id: "integrations", label: "Integrations", icon: Puzzle },
-  ];
+  ].filter(tab => {
+    if (!tab.restricted) return true;
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{"role":"super_admin"}') : {role: "super_admin"};
+    return user.role === 'super_admin';
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -139,6 +210,161 @@ export default function Settings() {
                   </div>
                 </div>
 
+              </motion.div>
+            )}
+
+            {activeTab === "team" && (
+              <motion.div 
+                key="team"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-8"
+              >
+                <div>
+                  <h3 className="text-xl font-bold mb-4">Team & Roles</h3>
+                  <p className="text-sm text-foreground/70 mb-6">Create and manage sub-users for your portal. Managers can handle day-to-day operations but cannot make crucial destructive changes.</p>
+                  
+                  <div className="bg-secondary/10 border border-secondary rounded-xl overflow-hidden mb-8">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-secondary/20 border-b border-secondary">
+                          <th className="p-4 font-bold text-sm">Name</th>
+                          <th className="p-4 font-bold text-sm">Email</th>
+                          <th className="p-4 font-bold text-sm">Role</th>
+                          <th className="p-4 font-bold text-sm text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {teamUsers.map(user => (
+                          <tr key={user.id} className="border-b border-secondary/50 last:border-0">
+                            <td className="p-4 font-medium">{user.name}</td>
+                            <td className="p-4 text-sm text-foreground/70">{user.email}</td>
+                            <td className="p-4">
+                              <span className={`px-2 py-1 rounded-md text-xs font-bold ${user.role === 'super_admin' ? 'bg-primary/20 text-primary' : 'bg-emerald-500/20 text-emerald-500'}`}>
+                                {user.role === 'super_admin' ? 'Super Admin' : 'Manager'}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <button 
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <form onSubmit={handleCreateUser} className="p-6 bg-secondary/10 border border-secondary rounded-xl space-y-4">
+                    <h4 className="font-bold mb-4 flex items-center gap-2"><Plus className="w-4 h-4"/> Add New User</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input 
+                        type="text" 
+                        required
+                        placeholder="Full Name"
+                        value={newUser.name}
+                        onChange={e => setNewUser({...newUser, name: e.target.value})}
+                        className="bg-background border border-secondary p-3 rounded-lg outline-none focus:border-primary"
+                      />
+                      <input 
+                        type="email" 
+                        required
+                        placeholder="Email Address"
+                        value={newUser.email}
+                        onChange={e => setNewUser({...newUser, email: e.target.value})}
+                        className="bg-background border border-secondary p-3 rounded-lg outline-none focus:border-primary"
+                      />
+                      <input 
+                        type="password" 
+                        required
+                        placeholder="Temporary Password"
+                        value={newUser.password}
+                        onChange={e => setNewUser({...newUser, password: e.target.value})}
+                        className="bg-background border border-secondary p-3 rounded-lg outline-none focus:border-primary"
+                      />
+                      <select 
+                        value={newUser.role}
+                        onChange={e => setNewUser({...newUser, role: e.target.value})}
+                        className="bg-background border border-secondary p-3 rounded-lg outline-none focus:border-primary appearance-none"
+                      >
+                        <option value="manager">Manager (Operations only)</option>
+                        <option value="admin">Admin (Advanced access)</option>
+                        <option value="super_admin">Super Admin (Full control)</option>
+                      </select>
+                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={isAddingUser}
+                      className="mt-4 bg-primary text-primary-foreground font-bold px-6 py-2.5 rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                    >
+                      {isAddingUser ? "Creating..." : "Create User"}
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "audit" && (
+              <motion.div 
+                key="audit"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-8"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-bold">Audit Logs</h3>
+                      <p className="text-sm text-foreground/70">Track all administrative actions and portal activity.</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        fetch('/api/audit')
+                          .then(res => res.json())
+                          .then(data => setAuditLogs(Array.isArray(data) ? data : []));
+                      }}
+                      className="p-2 hover:bg-secondary rounded-lg transition-colors text-primary"
+                    >
+                      Refresh Logs
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {auditLogs.length === 0 && (
+                      <div className="text-center py-20 border border-dashed border-secondary rounded-2xl">
+                        <p className="text-foreground/50">No activity logs found yet.</p>
+                      </div>
+                    )}
+                    {auditLogs.map((log) => (
+                      <div key={log.id} className="p-4 rounded-xl border border-secondary bg-secondary/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-primary uppercase tracking-wider">{log.action}</span>
+                            <span className="text-xs text-foreground/30">•</span>
+                            <span className="text-xs text-foreground/50">{new Date(log.timestamp).toLocaleString()}</span>
+                          </div>
+                          <p className="text-sm font-medium">{log.details}</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            <p className="text-sm font-bold">{log.userEmail}</p>
+                            <p className="text-xs text-foreground/50">User ID: {log.userId}</p>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                            {log.userEmail.charAt(0).toUpperCase()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             )}
 

@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic';
 import fs from 'fs';
 import path from 'path';
+import { recordLog } from '@/lib/audit';
 
 const dbPath = path.join(process.cwd(), 'clients.json');
 
@@ -34,6 +35,11 @@ export async function POST(request: Request) {
   clients.push(newClient);
   writeDB(clients);
   
+  // Audit log
+  const userEmail = request.headers.get('x-user-email') || 'system';
+  const userId = request.headers.get('x-user-id') || 'system';
+  await recordLog('CREATE_CLIENT', `Created new client: ${newClient.name}`, userEmail, userId);
+  
   return NextResponse.json(newClient);
 }
 
@@ -42,9 +48,25 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
+  const userId = request.headers.get('x-user-id');
+  
+  // Simple RBAC check
+  const usersPath = path.join(process.cwd(), 'users.json');
+  const usersData = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+  const actingUser = usersData.users.find((u: any) => u.id === userId);
+  
+  if (!actingUser || actingUser.role !== 'super_admin') {
+    return NextResponse.json({ error: "Unauthorized: Only Super Admins can delete clients" }, { status: 403 });
+  }
+
   let clients = readDB();
+  const userToDelete = clients.find((c: any) => c.id === id);
   clients = clients.filter((c: any) => c.id !== id);
   writeDB(clients);
+
+  // Audit log
+  const userEmail = request.headers.get('x-user-email') || 'system';
+  await recordLog('DELETE_CLIENT', `Deleted client: ${userToDelete?.name || id}`, userEmail, userId || 'system');
 
   return NextResponse.json({ success: true });
 }

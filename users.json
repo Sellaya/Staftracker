@@ -1,1 +1,12 @@
-{"users": []}
+{
+  "users": [
+    {
+      "id": "U-001",
+      "name": "Agency Owner",
+      "email": "admin@example.com",
+      "password": "password",
+      "role": "super_admin",
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}

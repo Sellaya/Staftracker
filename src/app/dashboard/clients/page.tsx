@@ -119,7 +119,11 @@ export default function ClientsPage() {
     try {
       const res = await fetch('/api/clients', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
+          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
+        },
         body: JSON.stringify(newClientData)
       });
       const addedClient = await res.json();
@@ -143,6 +147,10 @@ export default function ClientsPage() {
     try {
       const res = await fetch(`/api/clients?id=${clientToDelete}`, {
         method: 'DELETE',
+        headers: {
+          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
+          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
+        }
       });
       if (res.ok) {
         setClients(clients.filter(c => c.id !== clientToDelete));
