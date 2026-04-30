@@ -32,6 +32,28 @@ const INITIAL_CLIENTS: Client[] = [];
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newClientData, setNewClientData] = useState({
+    name: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    paymentMethod: "Credit Card",
+    feePercentage: 20
+  });
+
+  // Fetch clients on mount
+  import("react").then(React => {
+    React.useEffect(() => {
+      fetch('/api/clients')
+        .then(res => res.json())
+        .then(data => {
+          if(Array.isArray(data)) setClients(data);
+        })
+        .catch(console.error);
+    }, []);
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All"); 
   
@@ -93,6 +115,26 @@ export default function ClientsPage() {
     }));
   };
 
+  const handleAddClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newClientData)
+      });
+      const addedClient = await res.json();
+      setClients([...clients, addedClient]);
+      setIsAddModalOpen(false);
+      setNewClientData({ name: "", contactName: "", email: "", phone: "", paymentMethod: "Credit Card", feePercentage: 20 });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -100,7 +142,10 @@ export default function ClientsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Client Management</h1>
           <p className="text-foreground/70 mt-1">Manage hospitality venues, custom rates, and billing profiles.</p>
         </div>
-        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all"
+        >
           + Add New Client
         </button>
       </div>
@@ -484,6 +529,126 @@ export default function ClientsPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* ADD NEW CLIENT MODAL */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card w-full max-w-lg rounded-2xl border border-secondary shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/10 shrink-0">
+                <h2 className="text-xl font-bold">Add New Client</h2>
+                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto">
+                <form id="add-client-form" onSubmit={handleAddClient} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/70">Company Name</label>
+                    <input 
+                      required
+                      type="text"
+                      value={newClientData.name}
+                      onChange={e => setNewClientData({...newClientData, name: e.target.value})}
+                      className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
+                      placeholder="e.g. Grand Hotel"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-foreground/70">Contact Name</label>
+                    <input 
+                      required
+                      type="text"
+                      value={newClientData.contactName}
+                      onChange={e => setNewClientData({...newClientData, contactName: e.target.value})}
+                      className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
+                      placeholder="e.g. John Doe"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/70">Email</label>
+                      <input 
+                        required
+                        type="email"
+                        value={newClientData.email}
+                        onChange={e => setNewClientData({...newClientData, email: e.target.value})}
+                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/70">Phone</label>
+                      <input 
+                        required
+                        type="tel"
+                        value={newClientData.phone}
+                        onChange={e => setNewClientData({...newClientData, phone: e.target.value})}
+                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/70">Fee Percentage (%)</label>
+                      <input 
+                        required
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={newClientData.feePercentage}
+                        onChange={e => setNewClientData({...newClientData, feePercentage: Number(e.target.value)})}
+                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-foreground/70">Payment Method</label>
+                      <select 
+                        value={newClientData.paymentMethod}
+                        onChange={e => setNewClientData({...newClientData, paymentMethod: e.target.value})}
+                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors appearance-none"
+                      >
+                        <option>Credit Card</option>
+                        <option>ACH Transfer</option>
+                        <option>Invoice (Net 30)</option>
+                      </select>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              <div className="p-6 border-t border-secondary bg-secondary/10 shrink-0 flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-6 py-2.5 rounded-xl font-bold text-foreground/70 hover:bg-secondary/50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  form="add-client-form"
+                  type="submit"
+                  disabled={isAdding}
+                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isAdding && <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />}
+                  Create Client
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
