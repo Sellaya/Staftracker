@@ -20,15 +20,6 @@ export default function Settings() {
     marketing: false
   });
 
-  const handleSave = () => {
-    setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    }, 1500);
-  };
-
   const [teamUsers, setTeamUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isAddingUser, setIsAddingUser] = useState(false);
@@ -45,6 +36,15 @@ export default function Settings() {
       .then(data => setAuditLogs(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
+
+  const handleSave = () => {
+    setIsSaving(true);
+    setTimeout(() => {
+      setIsSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }, 1500);
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +209,137 @@ export default function Settings() {
                     </div>
                   </div>
                 </div>
+              </motion.div>
+            )}
 
+            {activeTab === "security" && (
+              <motion.div 
+                key="security"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-8"
+              >
+                <div>
+                  <h3 className="text-xl font-bold mb-6">Security Settings</h3>
+                  <div className="space-y-6">
+                    <div className="p-6 bg-secondary/10 border border-secondary rounded-2xl flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="font-bold">Two-Factor Authentication (2FA)</p>
+                        <p className="text-sm text-foreground/50">Add an extra layer of security to your account.</p>
+                      </div>
+                      <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-sm">Enable 2FA</button>
+                    </div>
+                    <div className="p-6 bg-secondary/10 border border-secondary rounded-2xl flex items-center justify-between">
+                      <div className="space-y-1">
+                        <p className="font-bold">Session Management</p>
+                        <p className="text-sm text-foreground/50">Log out from all other devices.</p>
+                      </div>
+                      <button className="px-4 py-2 border border-secondary rounded-lg font-bold text-sm hover:bg-secondary/50">Revoke All</button>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-sm text-foreground/70 uppercase tracking-wider">Change Password</h4>
+                      <div className="grid grid-cols-1 gap-4">
+                        <input type="password" placeholder="Current Password" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary" />
+                        <input type="password" placeholder="New Password" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary" />
+                        <button className="bg-primary text-primary-foreground font-bold py-3 rounded-xl">Update Password</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "notifications" && (
+              <motion.div 
+                key="notifications"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-8"
+              >
+                <div>
+                  <h3 className="text-xl font-bold mb-6">Communication Preferences</h3>
+                  <div className="space-y-4">
+                    {[
+                      { title: "New Job Post Alerts", desc: "Get notified when a client posts a new job.", default: true },
+                      { title: "Shift Clock-In Overdue", desc: "Alert when a worker is late for their shift.", default: true },
+                      { title: "Document Expiry", desc: "Notifications for expiring worker certifications.", default: false },
+                      { title: "System Updates", desc: "Occasional news about platform improvements.", default: true },
+                    ].map((item, i) => (
+                      <div key={i} className="p-4 bg-secondary/10 border border-secondary rounded-xl flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="font-bold text-sm">{item.title}</p>
+                          <p className="text-xs text-foreground/50">{item.desc}</p>
+                        </div>
+                        <div className="w-12 h-6 bg-primary/20 rounded-full relative cursor-pointer border border-primary/30">
+                          <div className={`absolute top-1 ${item.default ? 'right-1 bg-primary' : 'left-1 bg-foreground/30'} w-4 h-4 rounded-full transition-all`} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "billing" && (
+              <motion.div 
+                key="billing"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-8"
+              >
+                <div>
+                  <h3 className="text-xl font-bold mb-6">Billing & Subscription</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="p-6 bg-primary text-primary-foreground rounded-2xl shadow-xl shadow-primary/20 relative overflow-hidden">
+                      <div className="relative z-10">
+                        <p className="text-sm font-bold opacity-80 mb-2">CURRENT PLAN</p>
+                        <h4 className="text-3xl font-black mb-4">Enterprise Pro</h4>
+                        <p className="text-sm opacity-90 mb-6">Unlimited workers • Advanced AI Matchmaking • 24/7 Priority Support</p>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-bold">$499</span>
+                          <span className="text-sm font-medium opacity-80">/ month</span>
+                        </div>
+                      </div>
+                      <div className="absolute top-0 right-0 p-8 opacity-10">
+                        <CreditCard className="w-32 h-32 rotate-12" />
+                      </div>
+                    </div>
+                    <div className="p-6 border-2 border-dashed border-secondary rounded-2xl flex flex-col items-center justify-center text-center space-y-4">
+                      <p className="text-sm text-foreground/50">Need a custom plan for more than 500 workers?</p>
+                      <button className="px-6 py-2 border border-primary text-primary rounded-lg font-bold hover:bg-primary/5 transition-colors">Talk to Sales</button>
+                    </div>
+                  </div>
+
+                  <h4 className="font-bold text-lg mb-4">Recent Invoices</h4>
+                  <div className="bg-secondary/10 border border-secondary rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="bg-secondary/20 border-b border-secondary">
+                          <th className="p-4 font-bold">Date</th>
+                          <th className="p-4 font-bold">Amount</th>
+                          <th className="p-4 font-bold">Status</th>
+                          <th className="p-4 font-bold text-right">Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { date: "Apr 1, 2024", amount: "$499.00", status: "Paid" },
+                          { date: "Mar 1, 2024", amount: "$499.00", status: "Paid" },
+                        ].map((inv, i) => (
+                          <tr key={i} className="border-b border-secondary/50 last:border-0">
+                            <td className="p-4">{inv.date}</td>
+                            <td className="p-4 font-bold">{inv.amount}</td>
+                            <td className="p-4"><span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-500 rounded-md font-bold text-[10px]">PAID</span></td>
+                            <td className="p-4 text-right"><button className="text-primary hover:underline font-bold">Download PDF</button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -368,116 +498,7 @@ export default function Settings() {
               </motion.div>
             )}
 
-            {activeTab === "security" && (
-              <motion.div 
-                key="security"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-8"
-              >
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Authentication</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-secondary bg-secondary/10">
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-primary/20 text-primary rounded-lg">
-                          <Lock className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-bold">Password Reset</p>
-                          <p className="text-sm text-foreground/50">Force password reset on next login</p>
-                        </div>
-                      </div>
-                      <button className="px-4 py-2 bg-secondary rounded-lg font-bold text-sm hover:bg-secondary/80 transition-colors">
-                        Trigger Reset
-                      </button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-secondary bg-secondary/10">
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-emerald-500/20 text-emerald-500 rounded-lg">
-                          <Smartphone className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="font-bold">Two-Factor Authentication (2FA)</p>
-                          <p className="text-sm text-foreground/50">Require 2FA for all admin accounts</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">Enabled</span>
-                        <button className="text-sm font-bold text-foreground/50 hover:text-foreground">Configure</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <hr className="border-secondary/50" />
-
-                <div>
-                  <h3 className="text-xl font-bold mb-4 text-destructive">Danger Zone</h3>
-                  <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-bold text-destructive">Purge Cache & Temporary Files</p>
-                        <p className="text-sm text-foreground/50">Clear all system cache to free up space</p>
-                      </div>
-                      <button className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg font-bold text-sm hover:bg-destructive/90 transition-colors">
-                        Clear Cache
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === "notifications" && (
-              <motion.div 
-                key="notifications"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                <h3 className="text-xl font-bold mb-4">Notification Preferences</h3>
-                
-                <div className="space-y-4">
-                  {[
-                    { id: 'email', label: 'Email Notifications', desc: 'Receive daily summaries and critical alerts via email', icon: Mail },
-                    { id: 'sms', label: 'SMS Alerts', desc: 'Get text messages for urgent shift issues', icon: Smartphone },
-                    { id: 'app', label: 'In-App Notifications', desc: 'Show toast notifications while using the dashboard', icon: Bell },
-                    { id: 'marketing', label: 'Marketing Updates', desc: 'Receive news about platform features and updates', icon: Globe },
-                  ].map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 rounded-xl border border-secondary hover:border-primary/30 transition-colors">
-                      <div className="flex items-start gap-4">
-                        <div className="p-2 bg-secondary/50 rounded-lg">
-                          <item.icon className="w-5 h-5 text-foreground/70" />
-                        </div>
-                        <div>
-                          <p className="font-bold">{item.label}</p>
-                          <p className="text-sm text-foreground/50">{item.desc}</p>
-                        </div>
-                      </div>
-                      
-                      <button 
-                        onClick={() => setNotifications({ ...notifications, [item.id as keyof typeof notifications]: !notifications[item.id as keyof typeof notifications] })}
-                        className={`relative w-12 h-6 rounded-full transition-colors ${notifications[item.id as keyof typeof notifications] ? 'bg-primary' : 'bg-secondary'}`}
-                      >
-                        <motion.div 
-                          className="absolute top-1 w-4 h-4 rounded-full bg-white"
-                          animate={{ left: notifications[item.id as keyof typeof notifications] ? 24 : 4 }}
-                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                        />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {(activeTab === "billing" || activeTab === "integrations") && (
+            {activeTab === "integrations" && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -485,9 +506,9 @@ export default function Settings() {
                 className="flex flex-col items-center justify-center py-20 text-center space-y-4"
               >
                 <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4">
-                  {activeTab === "billing" ? <CreditCard className="w-8 h-8" /> : <Puzzle className="w-8 h-8" />}
+                   <Puzzle className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-bold">Coming Soon</h3>
+                <h3 className="text-2xl font-bold">Integrations Coming Soon</h3>
                 <p className="text-foreground/50 max-w-md">
                   We are currently integrating with our payment and 3rd party API providers. 
                   This section will be available in the upcoming v2.0 release.

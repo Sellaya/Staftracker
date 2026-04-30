@@ -256,8 +256,16 @@ const MOCK_JOBS: JobPost[] = [];
 
 export default function JobsManagement() {
   const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOBS);
+  const [clients, setClients] = useState<any[]>([]);
+  const [venues, setVenues] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<JobStatus | "All">("All");
+
+  useEffect(() => {
+    fetch('/api/jobs').then(res => res.json()).then(data => setJobs(Array.isArray(data) ? data : []));
+    fetch('/api/clients').then(res => res.json()).then(data => setClients(Array.isArray(data) ? data : []));
+    fetch('/api/venues').then(res => res.json()).then(data => setVenues(Array.isArray(data) ? data : []));
+  }, []);
 
   const getAuthHeaders = () => {
     const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
@@ -276,8 +284,8 @@ export default function JobsManagement() {
 
   // Creation State
   const [isCreating, setIsCreating] = useState(false);
-  const [createForm, setCreateForm] = useState<Partial<JobPost>>({
-    role: "", venueName: "", date: "", startTime: "", endTime: "", hourlyRate: 0, 
+  const [createForm, setCreateForm] = useState({
+    clientId: "", role: "", venueId: "", date: "", startTime: "", endTime: "", hourlyRate: 0, 
     instructions: "", uniform: "", parking: "", isUrgent: false
   });
 
@@ -345,12 +353,15 @@ export default function JobsManagement() {
       return;
     }
 
+    const client = clients.find(c => c.id === createForm.clientId);
+    const venue = venues.find(v => v.id === createForm.venueId);
+
     const newJob: Partial<JobPost> = {
       id: `J-${Math.floor(Math.random() * 9000) + 1000}`,
-      clientId: "C-000",
-      clientName: "New Client",
+      clientId: createForm.clientId,
+      clientName: client?.name || "Unknown Client",
       role: createForm.role || "Unknown Role",
-      venueName: createForm.venueName || "Unknown Venue",
+      venueName: venue?.name || "Unknown Venue",
       date: createForm.date || "",
       startTime: createForm.startTime || "",
       endTime: createForm.endTime || "",
@@ -382,7 +393,7 @@ export default function JobsManagement() {
 
     setIsCreating(false);
     setCreateForm({
-      role: "", venueName: "", date: "", startTime: "", endTime: "", hourlyRate: 0, 
+      clientId: "", role: "", venueId: "", date: "", startTime: "", endTime: "", hourlyRate: 0, 
       instructions: "", uniform: "", parking: "", isUrgent: false
     });
   };
@@ -580,14 +591,24 @@ export default function JobsManagement() {
               </div>
               <form onSubmit={handleCreateJob} className="p-6 overflow-y-auto space-y-6">
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground/70 mb-1">ASSOCIATED CLIENT</label>
+                    <select required value={createForm.clientId} onChange={e => setCreateForm({...createForm, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors">
+                      <option value="">Select Client...</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-foreground/70 mb-1">VENUE / LOCATION</label>
+                    <select required value={createForm.venueId} onChange={e => setCreateForm({...createForm, venueId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors">
+                      <option value="">Select Venue...</option>
+                      {venues.filter(v => !createForm.clientId || v.clientId === createForm.clientId).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-xs font-bold text-foreground/70 mb-1">ROLE / TITLE</label>
                     <input required type="text" value={createForm.role} onChange={e => setCreateForm({...createForm, role: e.target.value})} placeholder="e.g. Lead Bartender" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-foreground/70 mb-1">VENUE NAME</label>
-                    <input required type="text" value={createForm.venueName} onChange={e => setCreateForm({...createForm, venueName: e.target.value})} placeholder="e.g. The Rustic Table" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                   </div>
                 </div>
 

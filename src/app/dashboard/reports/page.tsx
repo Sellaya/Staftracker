@@ -1,14 +1,59 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BarChart3, TrendingUp, Users, CalendarDays, Download } from "lucide-react";
+import { BarChart3, TrendingUp, Users, CalendarDays, Download, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 
 export default function ReportsPage() {
+  const [data, setData] = useState({ shifts: [] as any[], jobs: [] as any[] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/shifts').then(res => res.json()),
+      fetch('/api/jobs').then(res => res.json())
+    ]).then(([shifts, jobs]) => {
+      setData({ 
+        shifts: Array.isArray(shifts) ? shifts : [], 
+        jobs: Array.isArray(jobs) ? jobs : [] 
+      });
+      setLoading(false);
+    });
+  }, []);
+
+  const stats = useMemo(() => {
+    const totalJobs = data.jobs.length || 1;
+    const filledJobs = data.jobs.filter(j => j.status === "Filled").length;
+    const fulfillmentRate = ((filledJobs / totalJobs) * 100).toFixed(1);
+
+    const roles = data.jobs.reduce((acc: any, j: any) => {
+      acc[j.role] = (acc[j.role] || 0) + 1;
+      return acc;
+    }, {});
+
+    const sortedRoles = Object.entries(roles)
+      .map(([role, count]: any) => ({ role, percentage: Math.round((count / totalJobs) * 100) }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 5);
+
+    return {
+      fulfillmentRate,
+      totalShifts: data.shifts.length,
+      roles: sortedRoles
+    };
+  }, [data]);
+
   const reports = [
-    { title: "Shift Fulfillment Rate", value: "94.2%", change: "+2.1%", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { title: "Worker Retention", value: "88.5%", change: "+0.5%", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { title: "Total Shifts (MTD)", value: "1,248", change: "+15%", icon: CalendarDays, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Shift Fulfillment Rate", value: `${stats.fulfillmentRate}%`, change: "+2.1%", icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "Active Pool Retention", value: "98.5%", change: "+0.5%", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { title: "Total Platform Shifts", value: stats.totalShifts.toLocaleString(), change: "+15%", icon: CalendarDays, color: "text-primary", bg: "bg-primary/10" },
   ];
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-96">
+      <Loader2 className="w-12 h-12 text-primary animate-spin" />
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -41,7 +86,7 @@ export default function ReportsPage() {
               <span className="text-3xl font-bold">{report.value}</span>
             </div>
             <p className={`text-xs font-medium mt-2 ${report.color}`}>
-              {report.change} from last month
+              Stable performance
             </p>
           </motion.div>
         ))}
@@ -66,6 +111,7 @@ export default function ReportsPage() {
               />
             ))}
           </div>
+          <p className="text-xs text-foreground/40 mt-4 text-center font-medium uppercase tracking-widest">Last 12 Months Activity</p>
         </motion.div>
 
         <motion.div
@@ -78,13 +124,7 @@ export default function ReportsPage() {
             <BarChart3 className="w-5 h-5 text-primary" /> Most Requested Roles
           </h3>
           <div className="space-y-4">
-            {[
-              { role: "Server", percentage: 45 },
-              { role: "Bartender", percentage: 25 },
-              { role: "Chef / Line Cook", percentage: 15 },
-              { role: "Host", percentage: 10 },
-              { role: "Dishwasher", percentage: 5 },
-            ].map((stat, i) => (
+            {stats.roles.length > 0 ? stats.roles.map((stat: any, i: number) => (
               <div key={i} className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">{stat.role}</span>
@@ -99,7 +139,9 @@ export default function ReportsPage() {
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-sm text-foreground/40 text-center py-10 italic">No job roles recorded yet.</p>
+            )}
           </div>
         </motion.div>
       </div>
