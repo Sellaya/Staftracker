@@ -258,6 +258,7 @@ export default function JobsManagement() {
   const [jobs, setJobs] = useState<JobPost[]>(MOCK_JOBS);
   const [clients, setClients] = useState<any[]>([]);
   const [venues, setVenues] = useState<any[]>([]);
+  const [allWorkers, setAllWorkers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<JobStatus | "All">("All");
 
@@ -265,6 +266,7 @@ export default function JobsManagement() {
     fetch('/api/jobs').then(res => res.json()).then(data => setJobs(Array.isArray(data) ? data : []));
     fetch('/api/clients').then(res => res.json()).then(data => setClients(Array.isArray(data) ? data : []));
     fetch('/api/venues').then(res => res.json()).then(data => setVenues(Array.isArray(data) ? data : []));
+    fetch('/api/workers').then(res => res.json()).then(data => setAllWorkers(Array.isArray(data) ? data : []));
   }, []);
 
   const getAuthHeaders = () => {
@@ -398,23 +400,46 @@ export default function JobsManagement() {
     });
   };
 
-  const handleAssignWorker = async (worker: Applicant) => {
+  const handleAssignWorker = async (worker: any) => {
     if (!selectedJobId) return;
     
     const targetJob = jobs.find(j => j.id === selectedJobId);
     if (targetJob) {
       const updated = { ...targetJob, status: "Filled" as JobStatus, assignedWorkerId: worker.id, assignedWorkerName: worker.name };
       try {
-        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(updated) });
-      } catch (e) {}
-    }
+        // 1. Update Job Status
+        await fetch('/api/jobs', { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, 
+          body: JSON.stringify(updated) 
+        });
 
-    setJobs(jobs.map(j => {
-      if (j.id === selectedJobId) {
-        return { ...j, status: "Filled" as JobStatus, assignedWorkerId: worker.id, assignedWorkerName: worker.name };
+        // 2. Create Shift Record
+        const shiftData = {
+          jobId: targetJob.id,
+          workerId: worker.id,
+          workerName: worker.name,
+          venueName: targetJob.venueName,
+          role: targetJob.role,
+          date: targetJob.date,
+          scheduledStart: targetJob.startTime,
+          scheduledEnd: targetJob.endTime,
+          hours: targetJob.hours,
+          rate: targetJob.hourlyRate,
+          status: "Upcoming"
+        };
+        await fetch('/api/shifts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+          body: JSON.stringify(shiftData)
+        });
+
+        // 3. Update Local UI
+        setJobs(jobs.map(j => j.id === selectedJobId ? updated as JobPost : j));
+      } catch (e) {
+        console.error("Assignment failed", e);
       }
-      return j;
-    }));
+    }
   };
 
   const handleUnassignWorker = async () => {
@@ -922,13 +947,10 @@ export default function JobsManagement() {
                         </div>
                       </div>
                     ) : (
-                      <div>
-                        <h4 className="text-sm font-bold flex items-center gap-2 mb-4">
-                          <Users className="w-5 h-5 text-primary" /> Applicants ({selectedJob.applicants.length})
-                        </h4>
-                        
-                        {selectedJob.applicants.length > 0 ? (
-                          <div className="space-y-3">
+                        {/* Applicants Section */}
+                        {selectedJob.applicants.length > 0 && (
+                          <div className="space-y-3 mb-8">
+                            <h5 className="text-xs font-bold text-foreground/50 mb-3 uppercase tracking-widest">Applicants</h5>
                             {selectedJob.applicants.map(applicant => (
                               <div key={applicant.id} className="p-4 border border-secondary bg-background rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                                 <div className="flex items-center gap-3">
@@ -941,30 +963,75 @@ export default function JobsManagement() {
                                       <span className="flex items-center gap-1 text-foreground/70">
                                         <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {applicant.rating}
                                       </span>
-                                      <span className={applicant.reliability >= 95 ? "text-emerald-500 font-medium" : "text-foreground/70"}>
-                                        {applicant.reliability}% Reliable
-                                      </span>
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3 w-full sm:w-auto">
-                                  <span className="text-xs text-foreground/40 font-medium hidden sm:block">{applicant.appliedAt}</span>
-                                  <button 
-                                    onClick={() => handleAssignWorker(applicant)}
-                                    className="flex-1 sm:flex-none px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors text-center"
-                                  >
-                                    Assign Worker
-                                  </button>
-                                </div>
+                                <button 
+                                  onClick={() => handleAssignWorker(applicant)}
+                                  className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors"
+                                >
+                                  Assign
+                                </button>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <div className="py-8 text-center border border-dashed border-secondary rounded-xl bg-secondary/5">
-                            <p className="text-foreground/50 text-sm">No workers have applied for this job yet.</p>
-                          </div>
                         )}
+
+                        {/* Manual Search Section */}
+                        <div className="pt-6 border-t border-secondary">
+                          <h5 className="text-xs font-bold text-foreground/50 mb-4 uppercase tracking-widest">Manual Worker Search</h5>
+                          <div className="space-y-4">
+                            <div className="relative group">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+                              <input 
+                                type="text" 
+                                placeholder="Search all workers..." 
+                                onChange={(e) => {
+                                  const term = e.target.value.toLowerCase();
+                                  if (!term) {
+                                    setManualSearchResults([]);
+                                    return;
+                                  }
+                                  const results = allWorkers.filter(w => 
+                                    (w.name.toLowerCase().includes(term) || w.email.toLowerCase().includes(term)) &&
+                                    w.id !== selectedJob.assignedWorkerId
+                                  );
+                                  setManualSearchResults(results.slice(0, 5));
+                                }}
+                                className="w-full pl-10 pr-4 py-3 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors text-sm" 
+                              />
+                            </div>
+                            
+                            {manualSearchResults.length > 0 && (
+                              <div className="bg-secondary/5 rounded-xl border border-secondary divide-y divide-secondary/50 overflow-hidden">
+                                {manualSearchResults.map((w: any) => (
+                                  <div key={w.id} className="p-3 hover:bg-secondary/20 transition-colors flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                                        {w.name.charAt(0)}
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-bold">{w.name}</p>
+                                        <p className="text-[10px] text-foreground/50 uppercase tracking-tighter">{w.role}</p>
+                                      </div>
+                                    </div>
+                                    <button 
+                                      onClick={() => {
+                                        handleAssignWorker(w);
+                                        setManualSearchResults([]);
+                                      }}
+                                      className="text-xs font-bold text-primary px-3 py-1.5 bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all"
+                                    >
+                                      Assign
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                    )}
                     )}
                   </div>
                 )}

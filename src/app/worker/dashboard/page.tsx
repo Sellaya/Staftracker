@@ -3,354 +3,333 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  CalendarDays, MapPin, Clock, 
-  ShieldCheck, AlertCircle, CheckCircle2,
-  X, Briefcase, Car, FileText, XCircle
+  Calendar, Clock, MapPin, CheckCircle2, 
+  User, CreditCard, ChevronRight, LogOut,
+  Bell, Briefcase, Star, Filter, ShieldCheck, Settings
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function WorkerDashboard() {
-  const [checkedIn, setCheckedIn] = useState(false);
-  const [gpsMock, setGpsMock] = useState(false);
-  const [assignedShifts, setAssignedShifts] = useState<any[]>([]);
-  const [selectedShift, setSelectedShift] = useState<any | null>(null);
+  const router = useRouter();
+  const [worker, setWorker] = useState<any>(null);
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [openJobs, setOpenJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"shifts" | "jobs" | "wallet" | "profile">("shifts");
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      router.push('/login/worker');
+      return;
+    }
+    const user = JSON.parse(userStr);
+    setWorker(user);
+
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/jobs', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          // Filter for jobs explicitly assigned to this worker
-          const currentUserStr = localStorage.getItem("currentUser");
-          const workerId = currentUserStr ? JSON.parse(currentUserStr).id : "W-2001";
-          const myShifts = data.filter((j: any) => j.assignedWorkerId === workerId && j.status === "Filled");
-          
-          // Sort by date (in a real app we'd parse properly, but simple string sort works for YYYY-MM-DD)
-          myShifts.sort((a: any, b: any) => new Date(`${a.date}T${a.startTime}`).getTime() - new Date(`${b.date}T${b.startTime}`).getTime());
-          
-          setAssignedShifts(myShifts);
-        }
-      } catch (err) {
-        console.error("Failed to fetch assigned jobs");
+        const [shiftsRes, jobsRes] = await Promise.all([
+          fetch('/api/shifts'),
+          fetch('/api/jobs')
+        ]);
+        const sData = await shiftsRes.json();
+        const jData = await jobsRes.json();
+        
+        setShifts(sData.filter((s: any) => s.workerId === user.id));
+        setOpenJobs(jData.filter((j: any) => j.status === "Open"));
+      } finally {
+        setLoading(false);
       }
     };
-    fetchJobs();
-  }, []);
+    fetchData();
+  }, [router]);
 
-  const handleCheckIn = () => {
-    setGpsMock(true);
-    setTimeout(() => {
-      setGpsMock(false);
-      setCheckedIn(true);
-    }, 2000);
-  };
-
-  const handleCancelShift = async () => {
-    if (!selectedShift) return;
-    
-    // Optimistic local UI update
-    setAssignedShifts(assignedShifts.filter(s => s.id !== selectedShift.id));
-    const targetId = selectedShift.id;
-    setSelectedShift(null);
-
+  const handleApply = async (jobId: string) => {
     try {
-      const res = await fetch('/api/jobs', { cache: 'no-store' });
+      const res = await fetch('/api/jobs/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, workerId: worker.id, workerName: worker.name })
+      });
       if (res.ok) {
-        const allJobs = await res.json();
-        const targetJob = allJobs.find((j: any) => j.id === targetId);
-        
-        if (targetJob) {
-          targetJob.status = "Open";
-          targetJob.assignedWorkerId = null;
-          targetJob.assignedWorkerName = null;
-          if (targetJob.applicants) {
-            const currentUserStr = localStorage.getItem("currentUser");
-            const workerId = currentUserStr ? JSON.parse(currentUserStr).id : "W-2001";
-            targetJob.applicants = targetJob.applicants.filter((a: any) => a.id !== workerId);
-          }
-          
-          await fetch('/api/jobs', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(targetJob)
-          });
-        }
+        alert("Application sent successfully!");
+        setOpenJobs(openJobs.filter(j => j.id !== jobId));
       }
-    } catch (err) {
-      console.error("Failed to cancel shift");
+    } catch (e) {
+      alert("Failed to apply");
     }
   };
 
-  const nextShift = assignedShifts.length > 0 ? assignedShifts[0] : null;
-  const upcomingShifts = assignedShifts.slice(1);
+  const handleClockIn = async (shift: any) => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
 
-  const formatMonth = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      alert(`Clocked in at ${new Date().toLocaleTimeString()} (GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)})`);
+      
+      await fetch('/api/shifts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...shift, status: "Active", actualCheckIn: new Date().toLocaleTimeString() })
+      });
+      window.location.reload();
+    });
   };
-  const formatDay = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString('en-US', { day: '2-digit' });
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    router.push('/');
   };
-  const formatFullDate = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  };
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return "--:--";
-    const [h, m] = timeStr.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-  };
+
+  if (loading) return (
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  const upcomingShifts = shifts.filter(s => s.status === "Upcoming" || s.status === "Active");
+  const completedShifts = shifts.filter(s => s.status === "Completed");
+  const totalEarnings = completedShifts.reduce((acc, s) => acc + (s.hours * (s.rate || 25)), 0);
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto w-full space-y-8">
-      
-      {/* Welcome Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Welcome back, Alex!</h1>
-          <p className="text-foreground/70 mt-1 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" /> Account Active & Verified
-          </p>
-        </div>
-        <div className="p-4 rounded-xl border border-secondary bg-background glass flex items-center gap-4 shadow-sm">
-          <div>
-            <p className="text-xs font-bold text-foreground/50">EST. THIS WEEK</p>
-            <p className="text-2xl font-black text-emerald-500">
-              ${assignedShifts.reduce((total, shift) => total + (shift.hours * shift.hourlyRate), 0).toFixed(2)}
-            </p>
+    <div className="min-h-screen bg-[#050505] text-white pb-24 font-[family-name:var(--font-geist-sans)]">
+      {/* Mobile Top Bar */}
+      <div className="sticky top-0 z-40 glass border-b border-white/10 px-6 py-4 flex justify-between items-center bg-[#050505]/80">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold">
+            {worker?.name?.charAt(0)}
           </div>
+          <div>
+            <p className="text-sm font-bold">{worker?.name}</p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest">Active Staff</p>
+          </div>
+        </div>
+        <div className="flex gap-4">
+          <Bell size={20} className="text-gray-400" />
+          <button onClick={handleLogout}><LogOut size={20} className="text-gray-400" /></button>
         </div>
       </div>
 
-      {/* Next Shift Banner */}
-      {nextShift ? (
-        <motion.div 
-          onClick={() => setSelectedShift(nextShift)}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-6 md:p-8 rounded-3xl bg-primary text-primary-foreground shadow-2xl shadow-primary/20 relative overflow-hidden cursor-pointer hover:shadow-primary/40 transition-shadow"
-        >
-          <div className="absolute top-[-50%] right-[-10%] w-[60%] h-[200%] bg-white/10 blur-3xl rounded-full mix-blend-overlay pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-black uppercase tracking-wider mb-4 border border-white/20 backdrop-blur-md">
-                Your Next Shift
-              </span>
-              <h2 className="text-3xl font-black mb-2">{nextShift.role}</h2>
-              <p className="text-primary-foreground/80 flex items-center gap-2 font-medium">
-                <MapPin className="w-5 h-5" /> {nextShift.venueName}
-              </p>
-            </div>
-            
-            <div className="flex flex-col gap-3 bg-black/20 p-5 rounded-2xl border border-white/10 w-full md:w-auto min-w-[280px]" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center gap-3">
-                <CalendarDays className="w-5 h-5 text-primary-foreground/70" />
-                <span className="font-bold">{formatFullDate(nextShift.date)}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Clock className="w-5 h-5 text-primary-foreground/70" />
-                <span className="font-bold">{formatTime(nextShift.startTime)} - {formatTime(nextShift.endTime)} ({nextShift.hours} hrs)</span>
-              </div>
-              
-              {checkedIn ? (
-                <div className="mt-2 w-full py-2.5 bg-emerald-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg">
-                  <CheckCircle2 className="w-5 h-5" /> Checked In
-                </div>
-              ) : (
-                <button 
-                  onClick={handleCheckIn}
-                  disabled={gpsMock}
-                  className="mt-2 w-full py-2.5 bg-white text-primary rounded-xl font-bold hover:bg-white/90 transition-colors shadow-lg shadow-black/20 disabled:opacity-80 flex items-center justify-center gap-2"
-                >
-                  {gpsMock ? (
-                    <>
-                      <MapPin className="w-4 h-4 animate-bounce" /> Verifying Location...
-                    </>
-                  ) : (
-                    "Check In via GPS"
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      ) : (
-        <div className="p-8 rounded-3xl border border-dashed border-secondary bg-secondary/5 text-center flex flex-col items-center justify-center space-y-4">
-          <CalendarDays className="w-12 h-12 text-foreground/30" />
-          <div>
-            <h3 className="text-xl font-bold mb-1">No Upcoming Shifts</h3>
-            <p className="text-foreground/50">You don't have any shifts scheduled. Check the marketplace to pick up some hours!</p>
-          </div>
-          <Link href="/worker/shifts" className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold mt-2 hover:bg-primary/90 transition-colors">
-            Find Shifts
-          </Link>
-        </div>
-      )}
-
-      {/* Upcoming Shifts List */}
-      {upcomingShifts.length > 0 && (
-        <div>
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-            Future Schedule
-          </h3>
-          
-          <div className="space-y-4">
-            {upcomingShifts.map((shift, i) => (
-              <div 
-                key={i} 
-                onClick={() => setSelectedShift(shift)}
-                className="p-5 rounded-2xl border border-secondary bg-background/50 glass flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-primary/50 hover:shadow-lg transition-all group cursor-pointer"
-              >
-                <div className="flex gap-4 items-center">
-                  <div className="w-14 h-14 rounded-xl bg-secondary/30 flex flex-col items-center justify-center border border-secondary">
-                    <span className="text-xs font-bold text-foreground/50">{formatMonth(shift.date)}</span>
-                    <span className="text-xl font-black text-foreground">{formatDay(shift.date)}</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-lg group-hover:text-primary transition-colors">{shift.role}</h4>
-                    <p className="text-sm text-foreground/70 flex items-center gap-1 mt-0.5">
-                      <MapPin className="w-3.5 h-3.5" /> {shift.venueName}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto">
-                  <span className="font-bold text-sm bg-secondary px-3 py-1 rounded-lg">
-                    {formatTime(shift.startTime)} - {formatTime(shift.endTime)}
-                  </span>
-                  <p className="text-emerald-500 font-bold text-sm sm:mt-2">${(shift.hours * shift.hourlyRate).toFixed(2)} Est. Pay</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {(!nextShift && upcomingShifts.length === 0) ? null : (
-        <Link href="/worker/shifts" className="block w-full text-center mt-4 py-4 rounded-xl border border-dashed border-secondary text-sm font-bold text-foreground/50 hover:bg-secondary/10 hover:text-foreground transition-colors">
-          Browse Open Shifts Hub
-        </Link>
-      )}
-
-      {/* Important Notices */}
-      <div>
-        <h3 className="text-xl font-bold mb-4">Action Required</h3>
-        <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-bold text-amber-500">SmartServe Expiring Soon</h4>
-            <p className="text-sm text-amber-500/80 mt-1">Your SmartServe certification on file expires in 30 days. Please upload a renewed certification to continue picking up Bartender and Server shifts.</p>
-            <Link href="/worker/profile" className="inline-block mt-3 px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-colors">
-              Upload New Document
-            </Link>
-          </div>
-        </div>
-      </div>
-
-
-      {/* Shift Details Modal */}
-      <AnimatePresence>
-        {selectedShift && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setSelectedShift(null)}
-          >
+      <main className="p-6 space-y-8 max-w-lg mx-auto">
+        
+        {activeTab === "shifts" && (
+          <section className="space-y-8">
+            {/* Earnings Quick View */}
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-background border border-secondary shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-xl shadow-emerald-500/20 relative overflow-hidden"
             >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <Briefcase className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold">{selectedShift.role}</h2>
-                    <p className="text-sm text-foreground/50">{selectedShift.venueName}</p>
-                  </div>
+              <div className="relative z-10">
+                <p className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1">Total Earnings</p>
+                <h2 className="text-4xl font-black mb-4">${totalEarnings.toLocaleString()}</h2>
+                <div className="flex items-center gap-2 text-xs font-bold bg-white/10 w-fit px-3 py-1.5 rounded-full backdrop-blur-md">
+                  <CheckCircle2 size={12} /> {completedShifts.length} Shifts Paid
                 </div>
-                <button 
-                  onClick={() => setSelectedShift(null)}
-                  className="p-2 bg-secondary/20 hover:bg-secondary/40 text-foreground/70 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
               </div>
-
-              {/* Modal Body */}
-              <div className="p-6 overflow-y-auto hide-scrollbar space-y-6">
-                
-                {/* Date & Time */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-secondary/10 border border-secondary">
-                    <p className="text-xs font-bold text-foreground/50 mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3"/> DATE</p>
-                    <p className="font-bold">{formatFullDate(selectedShift.date)}</p>
-                  </div>
-                  <div className="p-4 rounded-xl bg-secondary/10 border border-secondary">
-                    <p className="text-xs font-bold text-foreground/50 mb-1 flex items-center gap-1"><Clock className="w-3 h-3"/> TIME</p>
-                    <p className="font-bold">{formatTime(selectedShift.startTime)} - {formatTime(selectedShift.endTime)}</p>
-                  </div>
-                </div>
-
-                {/* Details Sections */}
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xs font-bold text-foreground/50 mb-2 flex items-center gap-2">
-                      <FileText className="w-4 h-4" /> INSTRUCTIONS
-                    </h3>
-                    <div className="p-4 rounded-xl border border-secondary bg-background text-sm leading-relaxed">
-                      {selectedShift.instructions || "No specific instructions provided."}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xs font-bold text-foreground/50 mb-2 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4" /> UNIFORM
-                    </h3>
-                    <div className="p-4 rounded-xl border border-secondary bg-background text-sm leading-relaxed">
-                      {selectedShift.uniform || "Standard uniform required."}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-xs font-bold text-foreground/50 mb-2 flex items-center gap-2">
-                      <Car className="w-4 h-4" /> PARKING
-                    </h3>
-                    <div className="p-4 rounded-xl border border-secondary bg-background text-sm leading-relaxed">
-                      {selectedShift.parking || "Parking information not provided."}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cancel Shift Option */}
-                <div className="pt-6 border-t border-secondary mt-6">
-                  <button 
-                    onClick={handleCancelShift}
-                    className="w-full py-3 flex items-center justify-center gap-2 text-red-500 font-bold bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors"
-                  >
-                    <XCircle className="w-4 h-4" /> Request Shift Cancellation
-                  </button>
-                  <p className="text-center text-xs text-foreground/40 mt-2">
-                    Canceling within 24 hours affects your reliability score.
-                  </p>
-                </div>
-
+              <div className="absolute top-0 right-0 p-8 opacity-20">
+                <CreditCard size={100} className="rotate-12" />
               </div>
             </motion.div>
-          </motion.div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Calendar size={20} className="text-emerald-400" /> Upcoming Shifts
+                </h3>
+                <span className="text-xs font-bold text-gray-500">{upcomingShifts.length} Assigned</span>
+              </div>
+
+              <div className="space-y-4">
+                {upcomingShifts.length === 0 && (
+                  <div className="py-12 text-center border border-dashed border-white/10 rounded-3xl bg-white/5">
+                    <p className="text-gray-500 text-sm italic">No shifts assigned yet.</p>
+                  </div>
+                )}
+                {upcomingShifts.map((shift) => (
+                  <motion.div 
+                    key={shift.id}
+                    whileHover={{ scale: 1.02 }}
+                    className="p-5 rounded-3xl bg-white/5 border border-white/10 flex flex-col gap-4"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-bold text-lg">{shift.role}</h4>
+                        <p className="text-sm text-gray-400">{shift.venueName}</p>
+                      </div>
+                      <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-black text-emerald-400 uppercase tracking-tighter">
+                        {shift.status}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2 text-xs text-gray-300">
+                        <Calendar size={14} className="text-emerald-400" /> {shift.date}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-300">
+                        <Clock size={14} className="text-emerald-400" /> {shift.scheduledStart}
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5">
+                      <button 
+                        onClick={() => handleClockIn(shift)}
+                        className="w-full py-3 bg-white text-black font-black rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-400 transition-colors"
+                      >
+                        {shift.status === "Active" ? "Already Active" : "Clock In"} <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </section>
         )}
-      </AnimatePresence>
+
+        {activeTab === "jobs" && (
+          <section className="space-y-6">
+            <h3 className="text-xl font-bold flex items-center gap-2 text-emerald-400">
+              <Briefcase size={24} /> Available Jobs
+            </h3>
+            <div className="space-y-4">
+              {openJobs.length === 0 && (
+                <div className="py-12 text-center border border-dashed border-white/10 rounded-3xl bg-white/5">
+                  <p className="text-gray-500 text-sm italic">No new jobs available right now.</p>
+                </div>
+              )}
+              {openJobs.map((job) => (
+                <motion.div 
+                  key={job.id}
+                  className="p-5 rounded-3xl bg-white/5 border border-white/10"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="font-bold text-lg">{job.role}</h4>
+                      <p className="text-sm text-gray-400">{job.venueName} • ${job.hourlyRate}/hr</p>
+                    </div>
+                    {job.isUrgent && <span className="px-2 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-black rounded uppercase">Urgent</span>}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-6">
+                    <span className="flex items-center gap-1"><Calendar size={12}/> {job.date}</span>
+                    <span className="flex items-center gap-1"><Clock size={12}/> {job.hours}h</span>
+                  </div>
+                  <button 
+                    onClick={() => handleApply(job.id)}
+                    className="w-full py-3 bg-emerald-500 text-white font-black rounded-2xl hover:bg-emerald-600 transition-colors"
+                  >
+                    Apply Now
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {activeTab === "wallet" && (
+          <section className="space-y-6">
+            <h3 className="text-xl font-bold flex items-center gap-2 text-emerald-400">
+              <CreditCard size={24} /> Wallet & Earnings
+            </h3>
+            <div className="p-6 rounded-3xl bg-white/5 border border-white/10 space-y-4">
+              <p className="text-xs font-bold text-gray-500 uppercase">Available for Payout</p>
+              <h4 className="text-4xl font-black">${totalEarnings.toLocaleString()}</h4>
+              <button className="w-full py-3 bg-emerald-500 text-white font-black rounded-2xl opacity-50 cursor-not-allowed">
+                Request Payout
+              </button>
+              <p className="text-[10px] text-gray-500 text-center italic">Payouts are processed every Friday.</p>
+            </div>
+
+            <div className="space-y-3">
+              <h5 className="font-bold text-sm">Recent Activity</h5>
+              {completedShifts.map(s => (
+                <div key={s.id} className="p-4 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center">
+                  <div>
+                    <p className="font-bold text-sm">{s.role}</p>
+                    <p className="text-[10px] text-gray-500">{s.date}</p>
+                  </div>
+                  <span className="font-bold text-emerald-400">+${(s.hours * (s.rate || 25)).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {activeTab === "profile" && (
+          <section className="space-y-6">
+             <h3 className="text-xl font-bold flex items-center gap-2 text-emerald-400">
+              <User size={24} /> My Profile
+            </h3>
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="w-24 h-24 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-3xl font-black text-emerald-400">
+                {worker?.name?.charAt(0)}
+              </div>
+              <div className="text-center">
+                <h4 className="text-2xl font-bold">{worker?.name}</h4>
+                <p className="text-gray-500 text-sm">{worker?.email}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="p-5 rounded-3xl bg-white/5 border border-white/10">
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-4">Identity Verification</p>
+                <div className="flex items-center gap-3 text-emerald-400">
+                  <ShieldCheck size={20} />
+                  <span className="font-bold text-sm">Documents Verified</span>
+                </div>
+              </div>
+              <button className="w-full p-5 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-between text-gray-400 hover:text-white transition-colors">
+                <div className="flex items-center gap-3">
+                  <Settings size={20} />
+                  <span className="font-bold text-sm">Settings</span>
+                </div>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 bg-[#050505]/80 p-4 flex justify-around items-center z-50">
+        <button 
+          onClick={() => setActiveTab("shifts")}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "shifts" ? "text-emerald-400" : "text-gray-500"}`}
+        >
+          <Calendar size={24} />
+          <span className="text-[10px] font-bold uppercase">Shifts</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("jobs")}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "jobs" ? "text-emerald-400" : "text-gray-500"}`}
+        >
+          <Briefcase size={24} />
+          <span className="text-[10px] font-bold uppercase">Find Work</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("wallet")}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "wallet" ? "text-emerald-400" : "text-gray-500"}`}
+        >
+          <CreditCard size={24} />
+          <span className="text-[10px] font-bold uppercase">Wallet</span>
+        </button>
+        <button 
+          onClick={() => setActiveTab("profile")}
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "profile" ? "text-emerald-400" : "text-gray-500"}`}
+        >
+          <User size={24} />
+          <span className="text-[10px] font-bold uppercase">Profile</span>
+        </button>
+      </nav>
+
+      <style jsx>{`
+        .glass {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(20px);
+        }
+      `}</style>
     </div>
   );
 }

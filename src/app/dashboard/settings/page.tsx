@@ -22,6 +22,7 @@ export default function Settings() {
 
   const [teamUsers, setTeamUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "manager" });
 
@@ -34,6 +35,11 @@ export default function Settings() {
     fetch('/api/audit')
       .then(res => res.json())
       .then(data => setAuditLogs(Array.isArray(data) ? data : []))
+      .catch(console.error);
+
+    fetch('/api/invoices')
+      .then(res => res.json())
+      .then(data => setInvoices(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
 
@@ -313,27 +319,35 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  <h4 className="font-bold text-lg mb-4">Recent Invoices</h4>
+                  <h4 className="font-bold text-lg mb-4">Client Billing Records</h4>
                   <div className="bg-secondary/10 border border-secondary rounded-xl overflow-hidden">
                     <table className="w-full text-left text-sm">
                       <thead>
                         <tr className="bg-secondary/20 border-b border-secondary">
-                          <th className="p-4 font-bold">Date</th>
+                          <th className="p-4 font-bold">Invoice #</th>
+                          <th className="p-4 font-bold">Client</th>
                           <th className="p-4 font-bold">Amount</th>
                           <th className="p-4 font-bold">Status</th>
-                          <th className="p-4 font-bold text-right">Receipt</th>
+                          <th className="p-4 font-bold text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {[
-                          { date: "Apr 1, 2024", amount: "$499.00", status: "Paid" },
-                          { date: "Mar 1, 2024", amount: "$499.00", status: "Paid" },
-                        ].map((inv, i) => (
-                          <tr key={i} className="border-b border-secondary/50 last:border-0">
-                            <td className="p-4">{inv.date}</td>
-                            <td className="p-4 font-bold">{inv.amount}</td>
-                            <td className="p-4"><span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-500 rounded-md font-bold text-[10px]">PAID</span></td>
-                            <td className="p-4 text-right"><button className="text-primary hover:underline font-bold">Download PDF</button></td>
+                        {invoices.length === 0 && (
+                          <tr><td colSpan={5} className="p-12 text-center text-foreground/50 italic">No global billing records found.</td></tr>
+                        )}
+                        {invoices.map((inv, i) => (
+                          <tr key={inv.id} className="border-b border-secondary/50 last:border-0 hover:bg-secondary/5 transition-colors">
+                            <td className="p-4 font-mono text-xs">{inv.id}</td>
+                            <td className="p-4 font-medium">{inv.clientName}</td>
+                            <td className="p-4 font-black">${inv.amount.toLocaleString()}</td>
+                            <td className="p-4">
+                              <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${inv.status === 'Paid' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-amber-500/20 text-amber-500'}`}>
+                                {inv.status.toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right">
+                              <button className="text-primary hover:underline font-bold text-xs">View Statement</button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

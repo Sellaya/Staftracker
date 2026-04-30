@@ -1,0 +1,12 @@
+{
+  "logs": [
+    {
+      "id": "LOG-701337",
+      "action": "CREATE_USER",
+      "details": "Created portal user: shan (manager)",
+      "userEmail": "admin@example.com",
+      "userId": "U-001",
+      "timestamp": "2026-04-30T04:51:37.186Z"
+    }
+  ]
+}

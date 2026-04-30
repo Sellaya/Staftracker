@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Building2, Search, Filter, MoreVertical, MapPin, DollarSign, Settings,
   X, UserCircle, Star, History, FileText, ShieldAlert, Edit3, Trash2, Check,
-  CreditCard, Users, Briefcase, RefreshCcw, Heart
+  CreditCard, Users, Briefcase, RefreshCcw, Heart, ChevronRight, Plus
 } from "lucide-react";
 
 // Types
-type Invoice = { id: string, amount: string, status: "Paid" | "Pending" | "Failed", date: string };
+type Invoice = { id: string, amount: number, status: "Paid" | "Pending" | "Failed", createdAt: string };
 type Rate = { role: string, rate: number };
 
 type Client = {
@@ -30,15 +30,19 @@ type Client = {
   venueCount: number;
 };
 
-// Mock Data
-const INITIAL_CLIENTS: Client[] = [];
-
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [workerSearch, setWorkerSearch] = useState("");
+  
+  const [editClientData, setEditClientData] = useState<Client | null>(null);
   const [newClientData, setNewClientData] = useState({
     name: "",
     contactName: "",
@@ -51,23 +55,73 @@ export default function ClientsPage() {
     notes: ""
   });
 
-  // Fetch clients on mount
+  const getAuthHeaders = () => {
+    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+    return {
+      'x-user-email': user.email || 'admin@example.com',
+      'x-user-id': user.id || 'U-001'
+    };
+  };
+
+  const fetchData = async () => {
+    const [cRes, wRes] = await Promise.all([
+      fetch('/api/clients'),
+      fetch('/api/workers')
+    ]);
+    const cData = await cRes.json();
+    const wData = await wRes.json();
+    if(Array.isArray(cData)) setClients(cData);
+    if(Array.isArray(wData)) setWorkers(wData);
+  };
+
   useEffect(() => {
-    fetch('/api/clients')
-      .then(res => res.json())
-      .then(data => {
-        if(Array.isArray(data)) setClients(data);
-      })
-      .catch(console.error);
+    fetchData();
   }, []);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All"); 
-  
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview"); 
-  
-  // Edit State
-  // Derived State
+
+  const fetchInvoices = async (clientId: string) => {
+    const res = await fetch(`/api/invoices?clientId=${clientId}`);
+    const data = await res.json();
+    setInvoices(data);
+  };
+
+  useEffect(() => {
+    if (selectedClientId) {
+      fetchInvoices(selectedClientId);
+    }
+  }, [selectedClientId]);
+
+  const handleGenerateInvoice = async () => {
+    if (!selectedClientId) return;
+    setIsGenerating(true);
+    try {
+      const selectedClient = clients.find(c => c.id === selectedClientId);
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          clientId: selectedClientId,
+          clientName: selectedClient?.name,
+          shiftIds: [] 
+        })
+      });
+      if (res.ok) {
+        fetchInvoices(selectedClientId);
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to generate invoice");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
       const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -77,7 +131,7 @@ export default function ClientsPage() {
       if (filter === "All") return true;
       if (filter === "Active") return c.status === "Active";
       if (filter === "Suspended") return c.status === "Suspended";
-      if (filter === "Pending Payment") return c.status === "Pending Payment" || c.invoices.some(i => i.status === "Failed");
+      if (filter === "Pending Payment") return c.status === "Pending Payment";
       
       return true;
     });
@@ -85,32 +139,44 @@ export default function ClientsPage() {
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
 
-  // Actions
-  const toggleSuspend = (id: string) => {
-    setClients(clients.map(c => c.id === id ? { ...c, status: c.status === "Active" ? "Suspended" : "Active" } : c));
-  };
-
-  const retryPayment = (clientId: string, invoiceId: string) => {
-    // Mock successful retry after a delay
-    setTimeout(() => {
-      setClients(clients.map(c => {
-        if (c.id === clientId) {
-          const updatedInvoices = c.invoices.map(i => i.id === invoiceId ? { ...i, status: "Paid" as const } : i);
-          const hasFailed = updatedInvoices.some(i => i.status === "Failed");
-          return { ...c, invoices: updatedInvoices, status: hasFailed ? "Pending Payment" : "Active" };
-        }
-        return c;
-      }));
-    }, 1500);
-  };
-
-  const removePreferredWorker = (clientId: string, workerId: string) => {
-    setClients(clients.map(c => {
-      if (c.id === clientId) {
-        return { ...c, preferredWorkers: c.preferredWorkers.filter(w => w.id !== workerId) };
+  const handleUpdateClient = async (updatedData: any) => {
+    try {
+      const res = await fetch('/api/clients', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(updatedData)
+      });
+      if (res.ok) {
+        setClients(clients.map(c => c.id === updatedData.id ? updatedData : c));
+        setIsEditModalOpen(false);
       }
-      return c;
-    }));
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleSuspend = (id: string) => {
+    const client = clients.find(c => c.id === id);
+    if (client) {
+      handleUpdateClient({ ...client, status: client.status === "Active" ? "Suspended" : "Active" });
+    }
+  };
+
+  const addToPreferred = (worker: any) => {
+    if (!selectedClient) return;
+    if (selectedClient.preferredWorkers.some(w => w.id === worker.id)) return;
+    const updated = {
+      ...selectedClient,
+      preferredWorkers: [...selectedClient.preferredWorkers, { id: worker.id, name: worker.name }]
+    };
+    handleUpdateClient(updated);
+  };
+
+  const removeFromPreferred = (workerId: string) => {
+    if (!selectedClient) return;
+    const updated = {
+      ...selectedClient,
+      preferredWorkers: selectedClient.preferredWorkers.filter(w => w.id !== workerId)
+    };
+    handleUpdateClient(updated);
   };
 
   const handleAddClient = async (e: React.FormEvent) => {
@@ -119,11 +185,7 @@ export default function ClientsPage() {
     try {
       const res = await fetch('/api/clients', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
-          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
-        },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify(newClientData)
       });
       const addedClient = await res.json();
@@ -147,10 +209,7 @@ export default function ClientsPage() {
     try {
       const res = await fetch(`/api/clients?id=${clientToDelete}`, {
         method: 'DELETE',
-        headers: {
-          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
-          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
-        }
+        headers: getAuthHeaders()
       });
       if (res.ok) {
         setClients(clients.filter(c => c.id !== clientToDelete));
@@ -187,16 +246,16 @@ export default function ClientsPage() {
               type="text" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search clients by name or contact..." 
+              placeholder="Search clients..." 
               className="w-full pl-10 pr-4 py-2 bg-background border border-secondary rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
             />
           </div>
-          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+          <div className="flex gap-2">
             {["All", "Active", "Pending Payment", "Suspended"].map(f => (
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`whitespace-nowrap px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   filter === f ? "bg-primary text-primary-foreground" : "border border-secondary hover:bg-secondary/50"
                 }`}
               >
@@ -212,16 +271,12 @@ export default function ClientsPage() {
               <tr>
                 <th className="px-6 py-4 font-medium">Company Profile</th>
                 <th className="px-6 py-4 font-medium">Venues</th>
-                <th className="px-6 py-4 font-medium">Industry</th>
-                <th className="px-6 py-4 font-medium">Payment Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredClients.map((client, i) => {
-                const hasFailedInvoice = client.invoices.some(inv => inv.status === "Failed");
-                
-                return (
+              {filteredClients.map((client, i) => (
                 <motion.tr 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -232,54 +287,35 @@ export default function ClientsPage() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
-                        {client.name.charAt(0)}
-                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">{client.name.charAt(0)}</div>
                       <div>
                         <p className="font-semibold group-hover:text-primary transition-colors">{client.name}</p>
-                        <p className="text-xs text-foreground/50">{client.contactName} • {client.id}</p>
+                        <p className="text-xs text-foreground/50">{client.contactName}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-1 font-medium text-foreground/70">
-                      <MapPin className="w-4 h-4 text-primary" /> {client.venueCount} Locations
+                      <MapPin className="w-4 h-4 text-primary" /> {client.venueCount || 0} Locations
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-bold">
-                    <span className="bg-secondary/50 px-2 py-1 rounded-md">{client.industry || "Hospitality"}</span>
-                  </td>
                   <td className="px-6 py-4">
-                    {hasFailedInvoice ? (
-                      <span className="flex items-center gap-1 text-red-500 font-bold text-xs bg-red-500/10 px-2.5 py-1 rounded-full w-fit">
-                        <ShieldAlert className="w-3 h-3"/> Payment Failed
-                      </span>
-                    ) : (
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        client.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-secondary text-foreground"
-                      }`}>
-                        {client.status}
-                      </span>
-                    )}
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      client.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-secondary text-foreground"
+                    }`}>
+                      {client.status}
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button className="text-primary text-xs font-bold hover:underline">Manage</button>
                   </td>
                 </motion.tr>
-              )})}
-              {filteredClients.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-foreground/50">
-                    No clients found matching your criteria.
-                  </td>
-                </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Side Panel Overlay for Client Profile */}
       <AnimatePresence>
         {selectedClient && (
           <>
@@ -287,434 +323,196 @@ export default function ClientsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setSelectedClientId(null); }}
+              onClick={() => setSelectedClientId(null)}
               className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
             />
             <motion.div 
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-3xl bg-background border-l border-secondary shadow-2xl z-50 flex flex-col overflow-hidden"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-3xl bg-background border-l border-secondary shadow-2xl z-50 flex flex-col"
             >
-              {/* Panel Header */}
-              <div className="p-6 border-b border-secondary flex justify-between items-start bg-secondary/5">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary text-2xl">
-                    <Building2 className="w-8 h-8" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
-                      {selectedClient.name}
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        selectedClient.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : 
-                        selectedClient.status === "Pending Payment" ? "bg-amber-500/10 text-amber-500" : "bg-red-500/10 text-red-500"
-                      }`}>
-                        {selectedClient.status}
-                      </span>
-                    </h2>
-                    <p className="text-foreground/50 font-mono text-sm">{selectedClient.id} • {selectedClient.contactName}</p>
-                  </div>
-                </div>
+              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
+                <h2 className="text-2xl font-bold">{selectedClient.name}</h2>
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => handleDeleteClient(selectedClient.id)} 
-                    disabled={isDeleting}
-                    className="p-2 hover:bg-red-500/10 text-red-500 rounded-full transition-colors disabled:opacity-50"
-                    title="Delete Client"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => { setSelectedClientId(null); }} className="p-2 hover:bg-secondary rounded-full transition-colors ml-4 flex-shrink-0">
-                    <X className="w-6 h-6" />
-                  </button>
+                  <button onClick={() => { setEditClientData(selectedClient); setIsEditModalOpen(true); }} className="p-2 hover:bg-secondary rounded-full" title="Edit Client"><Edit3 size={20} /></button>
+                  <button onClick={() => handleDeleteClient(selectedClient.id)} className="p-2 hover:bg-red-500/10 text-red-500 rounded-full" title="Delete Client"><Trash2 size={20} /></button>
+                  <button onClick={() => setSelectedClientId(null)} className="p-2 hover:bg-secondary rounded-full ml-4"><X size={24} /></button>
                 </div>
               </div>
 
-              {/* Panel Tabs */}
-              <div className="flex border-b border-secondary px-6 pt-2 bg-secondary/5 overflow-x-auto hide-scrollbar">
+              <div className="flex border-b border-secondary px-6 pt-2 bg-secondary/5 overflow-x-auto">
                 {[
-                  { id: 'overview', label: 'Overview & Settings', icon: Settings },
-                  { id: 'billing', label: 'Billing & Rates', icon: DollarSign },
-                  { id: 'preferred', label: 'Preferred Workers', icon: Heart },
+                  { id: 'overview', label: 'Overview', icon: Settings },
+                  { id: 'billing', label: 'Billing & Invoices', icon: DollarSign },
+                  { id: 'preferred', label: 'Preferred Roster', icon: Heart },
                 ].map(tab => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors whitespace-nowrap ${
+                    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
                       activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground'
                     }`}
                   >
-                    <tab.icon className="w-4 h-4" /> {tab.label}
+                    <tab.icon size={16} /> {tab.label}
                   </button>
                 ))}
               </div>
 
-              {/* Panel Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                
-                {/* OVERVIEW TAB */}
                 {activeTab === 'overview' && (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div className="p-4 rounded-xl border border-secondary bg-background">
-                          <div className="flex justify-between items-center mb-4">
-                            <h4 className="text-xs font-bold text-foreground/50">COMPANY CONTACT</h4>
-                            <button className="text-primary hover:underline text-xs font-bold">Edit</button>
-                          </div>
-                          <p className="text-sm font-medium">{selectedClient.contactName}</p>
-                          <p className="text-sm text-foreground/70">{selectedClient.email}</p>
-                          <p className="text-sm text-foreground/70">{selectedClient.phone}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="p-4 rounded-xl border border-secondary bg-background">
-                          <h4 className="text-xs font-bold text-foreground/50 mb-4">ACCOUNT STATUS</h4>
-                          <button 
-                            onClick={() => toggleSuspend(selectedClient.id)}
-                            className={`w-full py-2.5 rounded-lg text-sm font-bold border transition-colors ${
-                              selectedClient.status === "Active" 
-                                ? "border-red-500/50 text-red-500 hover:bg-red-500/10" 
-                                : "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
-                            }`}
-                          >
-                            {selectedClient.status === "Active" ? "Suspend Account (Block Shifts)" : "Unsuspend Account"}
-                          </button>
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="p-4 rounded-xl border border-secondary bg-background">
+                      <h4 className="text-xs font-bold text-foreground/50 mb-2">CONTACT</h4>
+                      <p className="text-sm font-medium">{selectedClient.contactName}</p>
+                      <p className="text-sm text-foreground/70">{selectedClient.email}</p>
+                      <p className="text-sm text-foreground/70">{selectedClient.phone}</p>
                     </div>
-
-                    <div className="border-t border-secondary pt-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-sm font-bold flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-primary" /> Venues ({selectedClient.venueCount})
-                        </h4>
-                        <button className="text-xs font-bold text-primary hover:underline">Manage in Venues &rarr;</button>
-                      </div>
-                      <div className="p-8 border border-dashed border-secondary rounded-xl flex flex-col items-center justify-center text-foreground/50 bg-secondary/5">
-                        <Building2 className="w-8 h-8 mb-2 opacity-50" />
-                        <p className="text-sm">Venues are managed in the global Venue Management module.</p>
-                      </div>
+                    <div className="p-4 rounded-xl border border-secondary bg-background">
+                      <h4 className="text-xs font-bold text-foreground/50 mb-2">ACCOUNT</h4>
+                      <button onClick={() => toggleSuspend(selectedClient.id)} className={`w-full py-2 rounded-lg text-sm font-bold border transition-colors ${selectedClient.status === "Active" ? "border-red-500 text-red-500 hover:bg-red-500/10" : "border-emerald-500 text-emerald-500 hover:bg-emerald-500/10"}`}>
+                        {selectedClient.status === "Active" ? "Suspend Account" : "Unsuspend Account"}
+                      </button>
                     </div>
-                  </>
-                )}
-
-                {/* BILLING & RATES TAB */}
-                {activeTab === 'billing' && (
-                  <div className="space-y-8">
-                    
-                    {/* Detailed Profile Info */}
-                    <div className="p-5 rounded-2xl border border-secondary bg-background grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-bold text-foreground/50">Address</h4>
-                          <p className="font-medium mt-1">{selectedClient.address || "No address provided"}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-foreground/50">Industry</h4>
-                          <p className="font-medium mt-1">{selectedClient.industry || "Hospitality"}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="text-sm font-bold text-foreground/50">Tax ID</h4>
-                          <p className="font-medium mt-1">{selectedClient.taxId || "N/A"}</p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-foreground/50">Notes</h4>
-                          <p className="font-medium mt-1 text-sm">{selectedClient.notes || "No notes available."}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Custom Hourly Rates */}
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-sm font-bold flex items-center gap-2">
-                          <Briefcase className="w-4 h-4 text-primary" /> Custom Hourly Rates
-                        </h4>
-                        <button className="text-xs font-bold text-primary hover:underline">+ Add Custom Rate</button>
-                      </div>
-                      
-                      {selectedClient.customRates.length > 0 ? (
-                        <div className="space-y-2">
-                          {selectedClient.customRates.map(rate => (
-                            <div key={rate.role} className="flex justify-between items-center p-3 rounded-lg border border-secondary bg-secondary/5">
-                              <span className="font-medium text-sm">{rate.role}</span>
-                              <div className="flex items-center gap-4">
-                                <span className="font-bold">${rate.rate}/hr</span>
-                                <button className="text-foreground/50 hover:text-primary"><Edit3 className="w-4 h-4"/></button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-foreground/50 p-4 border border-dashed border-secondary rounded-xl text-center">
-                          Using default platform rates for all roles.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Invoices */}
-                    <div>
-                      <h4 className="text-sm font-bold flex items-center gap-2 mb-4">
-                        <FileText className="w-4 h-4 text-primary" /> Recent Invoices
-                      </h4>
-                      <div className="space-y-3">
-                        {selectedClient.invoices.map(inv => (
-                          <div key={inv.id} className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
-                            inv.status === "Failed" ? "bg-red-500/5 border-red-500/30" : 
-                            inv.status === "Pending" ? "bg-amber-500/5 border-amber-500/20" : "bg-secondary/5 border-secondary"
-                          }`}>
-                            <div>
-                              <p className="font-bold flex items-center gap-2">
-                                {inv.id} 
-                                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded font-black ${
-                                  inv.status === "Failed" ? "bg-red-500 text-white" : 
-                                  inv.status === "Paid" ? "bg-emerald-500/20 text-emerald-500" : "bg-amber-500/20 text-amber-500"
-                                }`}>
-                                  {inv.status}
-                                </span>
-                              </p>
-                              <p className="text-xs text-foreground/70 mt-1">Billed on {inv.date}</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="font-black text-lg">{inv.amount}</span>
-                              {inv.status === "Failed" && (
-                                <button 
-                                  onClick={() => retryPayment(selectedClient.id, inv.id)}
-                                  className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors"
-                                >
-                                  <RefreshCcw className="w-3 h-3" /> Retry
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-foreground/50 mt-4 flex items-center gap-1">
-                        <CreditCard className="w-3 h-3"/> Payment Method: {selectedClient.paymentMethod}
-                      </p>
-                    </div>
-
                   </div>
                 )}
 
-                {/* PREFERRED WORKERS TAB */}
-                {activeTab === 'preferred' && (
+                {activeTab === 'billing' && (
                   <div className="space-y-6">
-                    <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20">
-                      <h4 className="font-bold flex items-center gap-2 text-primary mb-2">
-                        <Heart className="w-5 h-5 fill-primary" /> Preferred Roster
-                      </h4>
-                      <p className="text-sm text-foreground/70">
-                        When this client posts a shift, these workers will receive an exclusive priority notification 2 hours before the shift is broadcasted to the general pool.
-                      </p>
-                    </div>
-
                     <div className="flex justify-between items-center">
-                      <h4 className="font-bold text-sm">Workers ({selectedClient.preferredWorkers.length})</h4>
-                      <button className="text-xs font-bold bg-secondary hover:bg-secondary/80 text-foreground px-3 py-1.5 rounded-lg transition-colors">
-                        + Add Worker
+                      <h4 className="font-bold text-lg">Invoice Generation</h4>
+                      <button 
+                        onClick={handleGenerateInvoice}
+                        disabled={isGenerating}
+                        className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-xl text-sm disabled:opacity-50"
+                      >
+                        {isGenerating ? "Generating..." : "Generate New Invoice"}
                       </button>
                     </div>
 
-                    <div className="space-y-2">
-                      {selectedClient.preferredWorkers.length > 0 ? (
-                        selectedClient.preferredWorkers.map(worker => (
-                          <div key={worker.id} className="flex justify-between items-center p-4 rounded-xl border border-secondary bg-background hover:bg-secondary/5 transition-colors">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                                {worker.name.charAt(0)}
-                              </div>
+                    <div className="space-y-3">
+                      <h5 className="text-xs font-bold text-foreground/50 uppercase">History</h5>
+                      {invoices.length === 0 ? (
+                        <div className="py-12 text-center border border-dashed border-secondary rounded-2xl bg-secondary/5">
+                          <p className="text-sm text-foreground/50">No invoices yet.</p>
+                        </div>
+                      ) : (
+                        invoices.map(inv => (
+                          <div key={inv.id} className="p-4 rounded-xl border border-secondary bg-background flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <CreditCard className="text-emerald-500" size={20} />
                               <div>
-                                <p className="font-semibold text-sm">{worker.name}</p>
-                                <p className="text-xs text-foreground/50 font-mono">{worker.id}</p>
+                                <p className="font-bold text-sm">{inv.id}</p>
+                                <p className="text-[10px] text-foreground/50">{new Date(inv.createdAt).toLocaleDateString()}</p>
                               </div>
                             </div>
-                            <button 
-                              onClick={() => removePreferredWorker(selectedClient.id, worker.id)}
-                              className="text-xs font-bold text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
-                            >
-                              Remove
-                            </button>
+                            <div className="text-right">
+                              <p className="font-bold text-sm">${inv.amount.toLocaleString()}</p>
+                              <p className={`text-[10px] font-black uppercase ${inv.status === 'Paid' ? 'text-emerald-500' : 'text-amber-500'}`}>{inv.status}</p>
+                            </div>
                           </div>
                         ))
-                      ) : (
-                        <p className="text-sm text-foreground/50 p-8 border border-dashed border-secondary rounded-xl text-center">
-                          No preferred workers added yet.
-                        </p>
                       )}
                     </div>
                   </div>
                 )}
 
+                {activeTab === 'preferred' && (
+                  <div className="space-y-6">
+                    <div className="flex flex-col gap-4">
+                      <h4 className="font-bold text-lg">Priority Roster</h4>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/30 w-4 h-4" />
+                        <input 
+                          type="text" 
+                          value={workerSearch}
+                          onChange={e => setWorkerSearch(e.target.value)}
+                          placeholder="Search workers to add..." 
+                          className="w-full pl-10 pr-4 py-2 bg-secondary/10 border border-secondary rounded-xl text-sm focus:outline-none focus:border-primary"
+                        />
+                        {workerSearch && (
+                          <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-secondary rounded-xl shadow-2xl z-10 max-h-48 overflow-y-auto">
+                            {workers.filter(w => w.name.toLowerCase().includes(workerSearch.toLowerCase())).map(w => (
+                              <button 
+                                key={w.id}
+                                onClick={() => { addToPreferred(w); setWorkerSearch(""); }}
+                                className="w-full p-3 text-left hover:bg-primary/10 border-b border-secondary last:border-0 flex items-center justify-between group"
+                              >
+                                <span className="font-bold text-sm">{w.name}</span>
+                                <Plus size={16} className="text-primary opacity-0 group-hover:opacity-100" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3">
+                      {selectedClient.preferredWorkers.length === 0 && (
+                        <p className="text-center py-12 text-foreground/50 italic border border-dashed border-secondary rounded-2xl">No preferred workers added yet.</p>
+                      )}
+                      {selectedClient.preferredWorkers.map(w => (
+                        <div key={w.id} className="p-4 rounded-xl border border-secondary bg-background flex items-center justify-between group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">{w.name.charAt(0)}</div>
+                            <span className="font-bold text-sm">{w.name}</span>
+                          </div>
+                          <button onClick={() => removeFromPreferred(w.id)} className="p-2 text-foreground/20 hover:text-red-500 transition-colors">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* ADD NEW CLIENT MODAL */}
+      {/* EDIT CLIENT MODAL */}
+      <AnimatePresence>
+        {isEditModalOpen && editClientData && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card w-full max-w-lg rounded-2xl border border-secondary p-6 space-y-4">
+              <h2 className="text-xl font-bold">Edit Client Details</h2>
+              <div className="space-y-4">
+                <input value={editClientData.name} onChange={e => setEditClientData({...editClientData, name: e.target.value})} placeholder="Company Name" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+                <input value={editClientData.contactName} onChange={e => setEditClientData({...editClientData, contactName: e.target.value})} placeholder="Contact Name" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+                <div className="grid grid-cols-2 gap-4">
+                  <input value={editClientData.email} onChange={e => setEditClientData({...editClientData, email: e.target.value})} placeholder="Email" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+                  <input value={editClientData.phone} onChange={e => setEditClientData({...editClientData, phone: e.target.value})} placeholder="Phone" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 font-bold text-foreground/50">Cancel</button>
+                <button onClick={() => handleUpdateClient(editClientData)} className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl">Save Changes</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-card w-full max-w-lg rounded-2xl border border-secondary shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/10 shrink-0">
-                <h2 className="text-xl font-bold">Add New Client</h2>
-                <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-card w-full max-w-lg rounded-2xl border border-secondary p-6 space-y-4">
+              <h2 className="text-xl font-bold">Add New Client</h2>
+              <input value={newClientData.name} onChange={e => setNewClientData({...newClientData, name: e.target.value})} placeholder="Company Name" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+              <input value={newClientData.contactName} onChange={e => setNewClientData({...newClientData, contactName: e.target.value})} placeholder="Contact Person" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+              <div className="grid grid-cols-2 gap-4">
+                <input value={newClientData.email} onChange={e => setNewClientData({...newClientData, email: e.target.value})} placeholder="Email" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
+                <input value={newClientData.phone} onChange={e => setNewClientData({...newClientData, phone: e.target.value})} placeholder="Phone" className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none" />
               </div>
-              
-              <div className="p-6 overflow-y-auto">
-                <form id="add-client-form" onSubmit={handleAddClient} className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/70">Company Name</label>
-                    <input 
-                      required
-                      type="text"
-                      value={newClientData.name}
-                      onChange={e => setNewClientData({...newClientData, name: e.target.value})}
-                      className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
-                      placeholder="e.g. Grand Hotel"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-foreground/70">Contact Name</label>
-                    <input 
-                      required
-                      type="text"
-                      value={newClientData.contactName}
-                      onChange={e => setNewClientData({...newClientData, contactName: e.target.value})}
-                      className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
-                      placeholder="e.g. John Doe"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground/70">Email</label>
-                      <input 
-                        required
-                        type="email"
-                        value={newClientData.email}
-                        onChange={e => setNewClientData({...newClientData, email: e.target.value})}
-                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
-                        placeholder="john@example.com"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground/70">Phone</label>
-                      <input 
-                        required
-                        type="tel"
-                        value={newClientData.phone}
-                        onChange={e => setNewClientData({...newClientData, phone: e.target.value})}
-                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
-                        placeholder="(555) 123-4567"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground/70">Industry</label>
-                      <input 
-                        type="text"
-                        value={newClientData.industry}
-                        onChange={e => setNewClientData({...newClientData, industry: e.target.value})}
-                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
-                        placeholder="e.g. Hospitality"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground/70">Payment Method</label>
-                      <select 
-                        value={newClientData.paymentMethod}
-                        onChange={e => setNewClientData({...newClientData, paymentMethod: e.target.value})}
-                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors appearance-none"
-                      >
-                        <option>Credit Card</option>
-                        <option>ACH Transfer</option>
-                        <option>Invoice (Net 30)</option>
-                      </select>
-                    </div>
-                  </div>
-                </form>
-              </div>
-
-              <div className="p-6 border-t border-secondary bg-secondary/10 shrink-0 flex justify-end gap-3">
-                <button 
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-6 py-2.5 rounded-xl font-bold text-foreground/70 hover:bg-secondary/50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  form="add-client-form"
-                  type="submit"
-                  disabled={isAdding}
-                  className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isAdding && <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />}
-                  Create Client
-                </button>
+              <div className="flex justify-end gap-3 pt-4">
+                <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 font-bold text-foreground/50">Cancel</button>
+                <button onClick={handleAddClient} disabled={isAdding} className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl disabled:opacity-50">{isAdding ? "Saving..." : "Create Client"}</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-
-      {/* DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {clientToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-card w-full max-w-sm rounded-2xl border border-red-500/20 shadow-2xl overflow-hidden flex flex-col"
-            >
-              <div className="p-6 text-center space-y-4">
-                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto">
-                  <Trash2 className="w-8 h-8" />
-                </div>
-                <h2 className="text-xl font-bold">Delete Client?</h2>
-                <p className="text-foreground/70 text-sm">
-                  Are you sure you want to permanently delete this client? This action cannot be undone and will remove all associated venues and billing data.
-                </p>
-              </div>
-              <div className="p-4 border-t border-secondary bg-secondary/10 flex justify-end gap-3">
-                <button 
-                  onClick={() => setClientToDelete(null)}
-                  disabled={isDeleting}
-                  className="px-4 py-2 rounded-xl font-bold text-foreground/70 hover:bg-secondary/50 transition-colors disabled:opacity-50"
-                >
-                  No, Cancel
-                </button>
-                <button 
-                  onClick={confirmDeleteClient}
-                  disabled={isDeleting}
-                  className="px-4 py-2 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isDeleting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                  Yes, Delete
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
     </div>
   );
 }

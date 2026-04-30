@@ -1,0 +1,40 @@
+[
+  {
+    "id": "W-1001",
+    "name": "Sarah Connor",
+    "email": "sarah.c@example.com",
+    "phone": "(416) 555-0101",
+    "address": "123 Queen St W, Toronto, ON",
+    "status": "Active",
+    "documentStatus": "Approved",
+    "rating": 4.9,
+    "reliability": 98,
+    "roles": ["Bartender", "Server"],
+    "roleOverrides": [],
+    "flags": [],
+    "notes": [
+      { "id": "n1", "text": "Highly reliable, great feedback from The Rustic Table.", "date": "Apr 25, 2024" }
+    ],
+    "shiftHistory": [
+      { "role": "Bartender", "venue": "The Rustic Table", "date": "Apr 28, 2024", "hours": 8, "pay": "$240.00" }
+    ],
+    "lifetimeEarnings": "$12,450.00"
+  },
+  {
+    "id": "W-1002",
+    "name": "Marcus Wright",
+    "email": "m.wright@example.com",
+    "phone": "(647) 555-0202",
+    "address": "456 King St E, Toronto, ON",
+    "status": "Active",
+    "documentStatus": "Pending",
+    "rating": 4.5,
+    "reliability": 85,
+    "roles": ["Security", "General Labor"],
+    "roleOverrides": [],
+    "flags": [],
+    "notes": [],
+    "shiftHistory": [],
+    "lifetimeEarnings": "$0.00"
+  }
+]

@@ -49,6 +49,29 @@ export default function ReportsPage() {
     { title: "Total Platform Shifts", value: stats.totalShifts.toLocaleString(), change: "+15%", icon: CalendarDays, color: "text-primary", bg: "bg-primary/10" },
   ];
 
+  const handleExportCSV = () => {
+    if (data.shifts.length === 0 && data.jobs.length === 0) return;
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Type,ID,Client,Role,Date,Status,Hours,Rate\r\n";
+    
+    data.jobs.forEach(j => {
+      csvContent += `Job,${j.id},${j.clientName},${j.role},${j.date},${j.status},${j.hours},${j.hourlyRate}\r\n`;
+    });
+    
+    data.shifts.forEach(s => {
+      csvContent += `Shift,${s.id},${s.clientName || ''},${s.role},${s.date},${s.status},${s.hours},${s.rate || ''}\r\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `platform_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center h-96">
       <Loader2 className="w-12 h-12 text-primary animate-spin" />
@@ -62,7 +85,10 @@ export default function ReportsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Platform Reports</h1>
           <p className="text-foreground/70 mt-1">Generate analytics and insights on platform performance.</p>
         </div>
-        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+        <button 
+          onClick={handleExportCSV}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+        >
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>

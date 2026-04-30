@@ -70,3 +70,23 @@ export async function DELETE(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+export async function PUT(request: Request) {
+  try {
+    const updatedClient = await request.json();
+    let clients = readDB();
+    
+    const index = clients.findIndex((c: any) => c.id === updatedClient.id);
+    if (index === -1) return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    
+    clients[index] = { ...clients[index], ...updatedClient };
+    writeDB(clients);
+    
+    const userEmail = request.headers.get('x-user-email') || 'system';
+    const userId = request.headers.get('x-user-id') || 'system';
+    await recordLog('UPDATE_CLIENT', `Updated client details for ${updatedClient.name}`, userEmail, userId);
+    
+    return NextResponse.json(clients[index]);
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to update client" }, { status: 500 });
+  }
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "S-9001",
+    "clientName": "The Rustic Table",
+    "venueName": "Downtown Toronto Flagship",
+    "role": "Lead Bartender",
+    "date": "Apr 30, 2024",
+    "scheduledStart": "18:00",
+    "scheduledEnd": "02:00",
+    "status": "Active",
+    "workerName": "Sarah Connor",
+    "workerId": "W-1001",
+    "actualCheckIn": "17:55",
+    "gpsStatus": "Verified",
+    "isFlagged": false
+  }
+]

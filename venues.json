@@ -1,0 +1,19 @@
+[
+  {
+    "id": "V-5001",
+    "clientId": "C-1234",
+    "clientName": "The Rustic Table",
+    "name": "Downtown Toronto Flagship",
+    "address": "299 Queen St W, Toronto, ON M5V 2Z9",
+    "gps": "43.6495, -79.3904",
+    "status": "Active",
+    "departments": [
+      { "name": "Front of House", "active": true },
+      { "name": "Back of House", "active": true },
+      { "name": "Security", "active": false }
+    ],
+    "instructions": "Enter via the service door on the north side of the building. Ask for the floor manager upon arrival.",
+    "dressCode": "Black polo shirt, black trousers, non-slip shoes.",
+    "parkingInfo": "Limited street parking. Paid lot available at 150 Peter St."
+  }
+]

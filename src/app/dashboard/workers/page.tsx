@@ -40,9 +40,10 @@ export default function WorkersPage() {
   // Add Worker State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [newWorkerData, setNewWorkerData] = useState({
     name: "", email: "", phone: "", address: "", roles: [] as string[]
   });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editWorkerData, setEditWorkerData] = useState<any>(null);
 
   // Fetch Workers
   useEffect(() => {
@@ -226,23 +227,22 @@ export default function WorkersPage() {
     } catch (e) { console.error(e); }
   };
 
-  const handleAddWorker = async (e: React.FormEvent) => {
+    finally { setIsAdding(false); }
+  };
+
+  const handleUpdateWorker = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsAdding(true);
     try {
       const res = await fetch('/api/workers', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify(newWorkerData)
+        body: JSON.stringify(editWorkerData)
       });
       if (res.ok) {
-        const added = await res.json();
-        setWorkers([...workers, added]);
-        setIsAddModalOpen(false);
-        setNewWorkerData({ name: "", email: "", phone: "", address: "", roles: [] });
+        setWorkers(workers.map(w => w.id === editWorkerData.id ? editWorkerData : w));
+        setIsEditModalOpen(false);
       }
     } catch (e) { console.error(e); }
-    finally { setIsAdding(false); }
   };
 
   const handleDeleteWorker = async (id: string) => {
@@ -484,9 +484,12 @@ export default function WorkersPage() {
                     <p className="text-foreground/50 font-mono text-sm">{selectedWorker.id}</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedWorkerId(null)} className="p-2 hover:bg-secondary rounded-full transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setEditWorkerData(selectedWorker); setIsEditModalOpen(true); }} className="p-2 hover:bg-secondary rounded-full" title="Edit Profile"><Edit3 size={20}/></button>
+                  <button onClick={() => setSelectedWorkerId(null)} className="p-2 hover:bg-secondary rounded-full transition-colors">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex border-b border-secondary px-6 pt-2 bg-secondary/5">
@@ -805,9 +808,55 @@ export default function WorkersPage() {
                 </div>
               </form>
             </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* EDIT WORKER MODAL */}
+      <AnimatePresence>
+        {isEditModalOpen && editWorkerData && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]" />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-background border border-secondary shadow-2xl rounded-3xl z-[70] overflow-hidden">
+              <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
+                <h2 className="text-xl font-bold">Edit Worker Profile</h2>
+                <button onClick={() => setIsEditModalOpen(false)}><X size={20}/></button>
+              </div>
+              <form onSubmit={handleUpdateWorker} className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">FULL NAME</label>
+                  <input required type="text" value={editWorkerData.name} onChange={e => setEditWorkerData({...editWorkerData, name: e.target.value})} className="w-full px-4 py-2 bg-secondary/10 border border-secondary rounded-xl" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <input required type="email" value={editWorkerData.email} onChange={e => setEditWorkerData({...editWorkerData, email: e.target.value})} className="px-4 py-2 bg-secondary/10 border border-secondary rounded-xl" />
+                  <input required type="tel" value={editWorkerData.phone} onChange={e => setEditWorkerData({...editWorkerData, phone: e.target.value})} className="px-4 py-2 bg-secondary/10 border border-secondary rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">ROLES</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Bartender", "Server", "Chef", "Security", "Labor"].map(role => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => {
+                          const roles = editWorkerData.roles.includes(role) 
+                            ? editWorkerData.roles.filter((r: any) => r !== role) 
+                            : [...editWorkerData.roles, role];
+                          setEditWorkerData({...editWorkerData, roles});
+                        }}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold border ${editWorkerData.roles.includes(role) ? "bg-primary text-white" : "border-secondary"}`}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button type="submit" className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl mt-4">Save Changes</button>
+              </form>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
