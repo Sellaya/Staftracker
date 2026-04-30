@@ -40,8 +40,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Documents", href: "/dashboard/documents", icon: FileCheck2 },
     { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
     { name: "AI Matchmaking", href: "/dashboard/ai", icon: BrainCircuit },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
-  ];
+    { name: "Settings", href: "/dashboard/settings", icon: Settings, adminOnly: true },
+  ].filter(item => !item.adminOnly || user.role === 'admin');
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -98,11 +98,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell className="w-6 h-6" />
               <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-accent rounded-full border-2 border-background" />
             </button>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent p-0.5">
-              <div className="w-full h-full rounded-full bg-background flex items-center justify-center border-2 border-background">
-                <span className="font-bold text-sm">
-                  {user.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'AD'}
-                </span>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold leading-none">{user.name}</p>
+                <p className="text-[10px] font-bold text-primary uppercase tracking-tighter mt-1">{user.role.replace('_', ' ')}</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-accent p-0.5">
+                <div className="w-full h-full rounded-full bg-background flex items-center justify-center border-2 border-background">
+                  <span className="font-bold text-sm">
+                    {user.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'AD'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

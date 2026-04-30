@@ -22,9 +22,9 @@ export function middleware(request: NextRequest) {
     // Optional: Role-based check
     if (userCookie) {
       try {
-        const user = JSON.parse(userCookie.value);
-        if (pathname.startsWith('/dashboard') && user.role !== 'admin' && user.role !== 'super_admin') {
-           return NextResponse.redirect(new URL('/login', request.url));
+        const user = JSON.parse(decodeURIComponent(userCookie.value));
+        if (pathname.startsWith('/dashboard') && user.role !== 'admin' && user.role !== 'user') {
+           return NextResponse.redirect(new URL('/login/admin', request.url));
         }
         if (pathname.startsWith('/worker') && user.role !== 'worker') {
            return NextResponse.redirect(new URL('/login/worker', request.url));

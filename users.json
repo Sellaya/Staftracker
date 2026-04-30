@@ -2,19 +2,27 @@
   "users": [
     {
       "id": "U-001",
-      "name": "Agency Owner",
+      "name": "Super Admin",
       "email": "admin@example.com",
       "password": "password",
-      "role": "super_admin",
+      "role": "admin",
       "createdAt": "2024-01-01T00:00:00.000Z"
     },
     {
-      "name": "shan",
-      "email": "shan@gmail.com",
-      "password": "12345",
-      "role": "manager",
       "id": "U-95111",
+      "name": "Operations Manager",
+      "email": "user@example.com",
+      "password": "password",
+      "role": "user",
       "createdAt": "2026-04-30T04:51:37.184Z"
+    },
+    {
+      "id": "W-1001",
+      "name": "Sarah Connor",
+      "email": "worker@example.com",
+      "password": "password",
+      "role": "worker",
+      "createdAt": "2024-01-01T00:00:00.000Z"
     }
   ]
 }
