@@ -19,8 +19,11 @@ type Client = {
   email: string;
   phone: string;
   status: "Active" | "Suspended" | "Pending Payment";
-  feePercentage: number;
   paymentMethod: string;
+  address?: string;
+  industry?: string;
+  taxId?: string;
+  notes?: string;
   customRates: Rate[];
   preferredWorkers: { id: string, name: string }[];
   invoices: Invoice[];
@@ -40,7 +43,10 @@ export default function ClientsPage() {
     email: "",
     phone: "",
     paymentMethod: "Credit Card",
-    feePercentage: 20
+    address: "",
+    industry: "Hospitality",
+    taxId: "",
+    notes: ""
   });
 
   // Fetch clients on mount
@@ -59,9 +65,6 @@ export default function ClientsPage() {
   const [activeTab, setActiveTab] = useState("overview"); 
   
   // Edit State
-  const [editingFee, setEditingFee] = useState(false);
-  const [tempFee, setTempFee] = useState(0);
-
   // Derived State
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
@@ -83,11 +86,6 @@ export default function ClientsPage() {
   // Actions
   const toggleSuspend = (id: string) => {
     setClients(clients.map(c => c.id === id ? { ...c, status: c.status === "Active" ? "Suspended" : "Active" } : c));
-  };
-
-  const saveFee = (id: string) => {
-    setClients(clients.map(c => c.id === id ? { ...c, feePercentage: tempFee } : c));
-    setEditingFee(false);
   };
 
   const retryPayment = (clientId: string, invoiceId: string) => {
@@ -125,7 +123,7 @@ export default function ClientsPage() {
       const addedClient = await res.json();
       setClients([...clients, addedClient]);
       setIsAddModalOpen(false);
-      setNewClientData({ name: "", contactName: "", email: "", phone: "", paymentMethod: "Credit Card", feePercentage: 20 });
+      setNewClientData({ name: "", contactName: "", email: "", phone: "", paymentMethod: "Credit Card", address: "", industry: "Hospitality", taxId: "", notes: "" });
     } catch (error) {
       console.error(error);
     } finally {
@@ -181,7 +179,7 @@ export default function ClientsPage() {
               <tr>
                 <th className="px-6 py-4 font-medium">Company Profile</th>
                 <th className="px-6 py-4 font-medium">Venues</th>
-                <th className="px-6 py-4 font-medium">Platform Fee</th>
+                <th className="px-6 py-4 font-medium">Industry</th>
                 <th className="px-6 py-4 font-medium">Payment Status</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
@@ -216,7 +214,7 @@ export default function ClientsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-bold">
-                    <span className="bg-secondary/50 px-2 py-1 rounded-md">{client.feePercentage}%</span>
+                    <span className="bg-secondary/50 px-2 py-1 rounded-md">{client.industry || "Hospitality"}</span>
                   </td>
                   <td className="px-6 py-4">
                     {hasFailedInvoice ? (
@@ -256,7 +254,7 @@ export default function ClientsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setSelectedClientId(null); setEditingFee(false); }}
+              onClick={() => { setSelectedClientId(null); }}
               className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
             />
             <motion.div 
@@ -285,7 +283,7 @@ export default function ClientsPage() {
                     <p className="text-foreground/50 font-mono text-sm">{selectedClient.id} • {selectedClient.contactName}</p>
                   </div>
                 </div>
-                <button onClick={() => { setSelectedClientId(null); setEditingFee(false); }} className="p-2 hover:bg-secondary rounded-full transition-colors">
+                <button onClick={() => { setSelectedClientId(null); }} className="p-2 hover:bg-secondary rounded-full transition-colors">
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -364,39 +362,27 @@ export default function ClientsPage() {
                 {activeTab === 'billing' && (
                   <div className="space-y-8">
                     
-                    {/* Platform Fee Config */}
-                    <div className="p-5 rounded-2xl border border-secondary bg-background flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <h4 className="font-bold flex items-center gap-2">
-                          <DollarSign className="w-5 h-5 text-emerald-500" /> Platform Fee Percentage
-                        </h4>
-                        <p className="text-sm text-foreground/70 mt-1">The cut the platform takes from this client's total billings.</p>
+                    {/* Detailed Profile Info */}
+                    <div className="p-5 rounded-2xl border border-secondary bg-background grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground/50">Address</h4>
+                          <p className="font-medium mt-1">{selectedClient.address || "No address provided"}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground/50">Industry</h4>
+                          <p className="font-medium mt-1">{selectedClient.industry || "Hospitality"}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {editingFee ? (
-                          <>
-                            <input 
-                              type="number" 
-                              value={tempFee} 
-                              onChange={e => setTempFee(Number(e.target.value))}
-                              className="w-20 px-3 py-1.5 bg-background border border-primary rounded text-sm focus:outline-none"
-                            />
-                            <span className="font-bold">%</span>
-                            <button onClick={() => saveFee(selectedClient.id)} className="p-1.5 bg-emerald-500/20 text-emerald-500 rounded hover:bg-emerald-500/30">
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => setEditingFee(false)} className="p-1.5 bg-secondary text-foreground/70 rounded hover:text-foreground">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <span className="text-3xl font-black">{selectedClient.feePercentage}%</span>
-                            <button onClick={() => { setTempFee(selectedClient.feePercentage); setEditingFee(true); }} className="p-2 hover:bg-secondary rounded-lg transition-colors text-foreground/50 hover:text-primary" title="Edit Fee">
-                              <Edit3 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground/50">Tax ID</h4>
+                          <p className="font-medium mt-1">{selectedClient.taxId || "N/A"}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-foreground/50">Notes</h4>
+                          <p className="font-medium mt-1 text-sm">{selectedClient.notes || "No notes available."}</p>
+                        </div>
                       </div>
                     </div>
 
@@ -598,15 +584,13 @@ export default function ClientsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-foreground/70">Fee Percentage (%)</label>
+                      <label className="text-sm font-bold text-foreground/70">Industry</label>
                       <input 
-                        required
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={newClientData.feePercentage}
-                        onChange={e => setNewClientData({...newClientData, feePercentage: Number(e.target.value)})}
+                        type="text"
+                        value={newClientData.industry}
+                        onChange={e => setNewClientData({...newClientData, industry: e.target.value})}
                         className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
+                        placeholder="e.g. Hospitality"
                       />
                     </div>
                     <div className="space-y-2">

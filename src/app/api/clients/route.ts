@@ -26,7 +26,6 @@ export async function POST(request: Request) {
   // Assign ID and default values if not provided
   newClient.id = `C-${Math.floor(Math.random() * 10000)}`;
   newClient.status = newClient.status || "Active";
-  newClient.feePercentage = newClient.feePercentage || 20;
   newClient.customRates = newClient.customRates || [];
   newClient.preferredWorkers = newClient.preferredWorkers || [];
   newClient.invoices = newClient.invoices || [];
