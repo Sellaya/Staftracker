@@ -133,8 +133,6 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this client? This action cannot be undone.")) return;
-    
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/clients?id=${id}`, {

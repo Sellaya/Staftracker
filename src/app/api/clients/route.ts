@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 export const dynamic = 'force-dynamic';
 import fs from 'fs';
 import path from 'path';
@@ -37,8 +37,8 @@ export async function POST(request: Request) {
   return NextResponse.json(newClient);
 }
 
-export async function DELETE(request: Request) {
-  const { searchParams } = new URL(request.url);
+export async function DELETE(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
   const id = searchParams.get('id');
   if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
