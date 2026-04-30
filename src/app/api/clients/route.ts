@@ -36,3 +36,15 @@ export async function POST(request: Request) {
   
   return NextResponse.json(newClient);
 }
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get('id');
+  if (!id) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
+
+  let clients = readDB();
+  clients = clients.filter((c: any) => c.id !== id);
+  writeDB(clients);
+
+  return NextResponse.json({ success: true });
+}

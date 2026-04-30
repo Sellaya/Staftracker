@@ -37,6 +37,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [newClientData, setNewClientData] = useState({
     name: "",
     contactName: "",
@@ -128,6 +129,25 @@ export default function ClientsPage() {
       console.error(error);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this client? This action cannot be undone.")) return;
+    
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/clients?id=${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setClients(clients.filter(c => c.id !== id));
+        setSelectedClientId(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete client", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -283,9 +303,19 @@ export default function ClientsPage() {
                     <p className="text-foreground/50 font-mono text-sm">{selectedClient.id} • {selectedClient.contactName}</p>
                   </div>
                 </div>
-                <button onClick={() => { setSelectedClientId(null); }} className="p-2 hover:bg-secondary rounded-full transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleDeleteClient(selectedClient.id)} 
+                    disabled={isDeleting}
+                    className="p-2 hover:bg-red-500/10 text-red-500 rounded-full transition-colors disabled:opacity-50"
+                    title="Delete Client"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => { setSelectedClientId(null); }} className="p-2 hover:bg-secondary rounded-full transition-colors ml-4 flex-shrink-0">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               {/* Panel Tabs */}

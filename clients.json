@@ -12,5 +12,22 @@
     "preferredWorkers": [],
     "invoices": [],
     "venueCount": 0
+  },
+  {
+    "name": "angelo",
+    "contactName": "angelo",
+    "email": "angelo@angelo.com",
+    "phone": "4376770182",
+    "paymentMethod": "ACH Transfer",
+    "address": "",
+    "industry": "Hospitality",
+    "taxId": "",
+    "notes": "",
+    "id": "C-1585",
+    "status": "Active",
+    "customRates": [],
+    "preferredWorkers": [],
+    "invoices": [],
+    "venueCount": 0
   }
 ]
