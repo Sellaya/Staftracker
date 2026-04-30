@@ -139,29 +139,6 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <hr className="border-secondary/50" />
-
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Appearance</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => setTheme("dark")}
-                      className={`p-4 rounded-xl border-2 flex items-center justify-center gap-3 font-bold transition-all ${
-                        theme === "dark" ? "border-primary bg-primary/10 text-primary" : "border-secondary hover:border-foreground/30 text-foreground/70"
-                      }`}
-                    >
-                      <Moon className="w-5 h-5" /> Dark Theme
-                    </button>
-                    <button 
-                      onClick={() => setTheme("light")}
-                      className={`p-4 rounded-xl border-2 flex items-center justify-center gap-3 font-bold transition-all ${
-                        theme === "light" ? "border-primary bg-primary/10 text-primary" : "border-secondary hover:border-foreground/30 text-foreground/70"
-                      }`}
-                    >
-                      <Sun className="w-5 h-5" /> Light Theme
-                    </button>
-                  </div>
-                </div>
               </motion.div>
             )}
 
