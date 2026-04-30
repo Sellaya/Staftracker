@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Building2, Search, Filter, MoreVertical, MapPin, DollarSign, Settings,
@@ -44,16 +44,14 @@ export default function ClientsPage() {
   });
 
   // Fetch clients on mount
-  import("react").then(React => {
-    React.useEffect(() => {
-      fetch('/api/clients')
-        .then(res => res.json())
-        .then(data => {
-          if(Array.isArray(data)) setClients(data);
-        })
-        .catch(console.error);
-    }, []);
-  });
+  useEffect(() => {
+    fetch('/api/clients')
+      .then(res => res.json())
+      .then(data => {
+        if(Array.isArray(data)) setClients(data);
+      })
+      .catch(console.error);
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All"); 
   
