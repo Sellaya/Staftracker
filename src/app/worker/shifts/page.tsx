@@ -85,6 +85,16 @@ export default function WorkerOpenShifts() {
     return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
   };
 
+  const getWorkerFromStorage = () => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) return null;
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
     const fetchLiveJobs = async () => {
       try {
@@ -105,8 +115,7 @@ export default function WorkerOpenShifts() {
               rate: dbJob.hourlyRate,
               urgent: dbJob.isUrgent,
               applied: dbJob.applicants?.some((a: any) => {
-                const currentUserStr = localStorage.getItem("currentUser");
-                const workerId = currentUserStr ? JSON.parse(currentUserStr).id : "W-2001";
+                const workerId = getWorkerFromStorage()?.id;
                 return a.id === workerId;
               }) || false
             }));
@@ -121,7 +130,7 @@ export default function WorkerOpenShifts() {
 
   const handleApply = async (id: string) => {
     // Update local UI immediately
-    setShifts(shifts.map(s => s.id === id ? { ...s, applied: true } : s));
+    setShifts((prev) => prev.map(s => s.id === id ? { ...s, applied: true } : s));
 
     try {
       // Fetch the full job data
@@ -132,12 +141,10 @@ export default function WorkerOpenShifts() {
         
         if (targetJob) {
           // Add this worker to the applicants list
-          const currentUserStr = localStorage.getItem("currentUser");
-          const workerUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+          const workerUser = getWorkerFromStorage();
           const newApplicant = {
-            id: workerUser ? workerUser.id : "W-2001",
+            id: workerUser ? workerUser.id : "unknown-worker",
             name: workerUser ? `${workerUser.firstName} ${workerUser.lastName}` : "Alex (You)",
-            rating: 5.0,
             reliability: 100,
             appliedAt: "Just now"
           };
@@ -149,10 +156,10 @@ export default function WorkerOpenShifts() {
           }
 
           // Save back to the database
-          await fetch('/api/jobs', {
-            method: 'PUT',
+          await fetch('/api/jobs/apply', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(targetJob)
+            body: JSON.stringify({ jobId: id, workerId: newApplicant.id, workerName: newApplicant.name })
           });
         }
       }
@@ -163,7 +170,7 @@ export default function WorkerOpenShifts() {
 
   const handleCancelApplication = async (id: string) => {
     // Update local UI immediately
-    setShifts(shifts.map(s => s.id === id ? { ...s, applied: false } : s));
+    setShifts((prev) => prev.map(s => s.id === id ? { ...s, applied: false } : s));
 
     try {
       // Fetch the full job data
@@ -174,8 +181,7 @@ export default function WorkerOpenShifts() {
         
         if (targetJob && targetJob.applicants) {
           // Remove this worker from the applicants list
-          const currentUserStr = localStorage.getItem("currentUser");
-          const workerId = currentUserStr ? JSON.parse(currentUserStr).id : "W-2001";
+          const workerId = getWorkerFromStorage()?.id;
           targetJob.applicants = targetJob.applicants.filter((a: any) => a.id !== workerId);
 
           // Save back to the database

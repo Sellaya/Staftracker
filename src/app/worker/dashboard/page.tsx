@@ -18,22 +18,26 @@ export default function WorkerDashboard() {
   const [activeTab, setActiveTab] = useState<"shifts" | "jobs" | "wallet" | "profile">("shifts");
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      router.push('/login/worker');
-      return;
-    }
-    const user = JSON.parse(userStr);
-    setWorker(user);
-
     const fetchData = async () => {
       try {
+        const meRes = await fetch('/api/me', { cache: 'no-store' });
+        if (!meRes.ok) {
+          router.push('/login/worker');
+          return;
+        }
+        const user = await meRes.json();
+        if (user.role !== 'worker') {
+          router.push('/login/worker');
+          return;
+        }
+        localStorage.setItem('user', JSON.stringify(user));
+        setWorker(user);
         const [shiftsRes, jobsRes] = await Promise.all([
           fetch('/api/shifts'),
           fetch('/api/jobs')
         ]);
-        const sData = await shiftsRes.json();
-        const jData = await jobsRes.json();
+        const sData = shiftsRes.ok ? await shiftsRes.json() : [];
+        const jData = jobsRes.ok ? await jobsRes.json() : [];
         
         setShifts(Array.isArray(sData) ? sData.filter((s: any) => s.workerId === user.id) : []);
         setOpenJobs(Array.isArray(jData) ? jData.filter((j: any) => j.status === "Open") : []);
@@ -78,14 +82,19 @@ export default function WorkerDashboard() {
           ...shift, 
           status: "Active", 
           actualCheckIn: new Date().toLocaleTimeString(),
-          gpsStatus: "Verified" 
+          gpsStatus: latitude && longitude ? "Verified" : "Unavailable",
+          gpsLatitude: latitude,
+          gpsLongitude: longitude
         })
       });
       window.location.reload();
+    }, () => {
+      alert("Unable to verify location. Please enable geolocation and retry.");
     });
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
     localStorage.removeItem('user');
     router.push('/');
   };

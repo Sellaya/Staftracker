@@ -25,20 +25,26 @@ export default function Settings() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "manager" });
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    fetch('/api/me', { cache: 'no-store' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setCurrentUser(data))
+      .catch(console.error);
+
     fetch('/api/users')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => setTeamUsers(Array.isArray(data) ? data : []))
       .catch(console.error);
 
     fetch('/api/audit')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => setAuditLogs(Array.isArray(data) ? data : []))
       .catch(console.error);
 
     fetch('/api/invoices')
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : [])
       .then(data => setInvoices(Array.isArray(data) ? data : []))
       .catch(console.error);
   }, []);
@@ -59,11 +65,7 @@ export default function Settings() {
       const res = await fetch('/api/users', {
         method: 'POST',
         body: JSON.stringify(newUser),
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
-          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
       if (res.ok) {
         const createdUser = await res.json();
@@ -83,11 +85,7 @@ export default function Settings() {
     if (!confirm("Delete this user?")) return;
     try {
       const res = await fetch(`/api/users?id=${id}`, { 
-        method: 'DELETE',
-        headers: {
-          'x-user-email': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').email || 'admin@example.com') : 'system',
-          'x-user-id': typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('user') || '{}').id || 'U-001') : 'system'
-        }
+        method: 'DELETE'
       });
       if (res.ok) {
         setTeamUsers(teamUsers.filter(u => u.id !== id));
@@ -110,8 +108,7 @@ export default function Settings() {
     { id: "integrations", label: "Integrations", icon: Puzzle },
   ].filter(tab => {
     if (!tab.restricted) return true;
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{"role":"super_admin"}') : {role: "super_admin"};
-    return user.role === 'super_admin';
+    return currentUser?.role === 'super_admin' || currentUser?.role === 'admin';
   });
 
   return (

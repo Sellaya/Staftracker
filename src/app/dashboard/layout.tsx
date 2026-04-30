@@ -15,15 +15,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (!storedUser) {
-      router.push("/login/admin");
-    } else {
-      setUser(JSON.parse(storedUser));
-    }
+    const bootstrap = async () => {
+      try {
+        const res = await fetch("/api/me", { cache: "no-store" });
+        if (!res.ok) {
+          localStorage.removeItem("user");
+          router.push("/login/admin");
+          return;
+        }
+        const sessionUser = await res.json();
+        localStorage.setItem("user", JSON.stringify(sessionUser));
+        setUser(sessionUser);
+      } catch {
+        router.push("/login/admin");
+      }
+    };
+    bootstrap();
   }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST" });
     localStorage.removeItem("user");
     router.push("/login/admin");
   };

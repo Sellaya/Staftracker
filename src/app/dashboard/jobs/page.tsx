@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Briefcase, Search, Plus, MapPin, CalendarDays, Clock, 
-  DollarSign, AlertCircle, X, Users, CheckCircle2, Star, Edit3, Check, Navigation, Shirt, Car,
+  DollarSign, AlertCircle, X, Users, CheckCircle2, Edit3, Check, Navigation, Shirt, Car,
   ChevronLeft, ChevronRight, XCircle
 } from "lucide-react";
 
@@ -14,7 +14,6 @@ type JobStatus = "Open" | "Filled" | "Cancelled";
 type Applicant = {
   id: string;
   name: string;
-  rating: number;
   reliability: number;
   appliedAt: string;
 };
@@ -270,11 +269,7 @@ export default function JobsManagement() {
   }, []);
 
   const getAuthHeaders = () => {
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
-    return {
-      'x-user-email': user.email || 'admin@example.com',
-      'x-user-id': user.id || 'U-001'
-    };
+    return {};
   };
   
   // Selection State
@@ -961,10 +956,8 @@ export default function JobsManagement() {
                                   </div>
                                   <div>
                                     <p className="font-bold group-hover:text-primary transition-colors cursor-pointer">{applicant.name}</p>
-                                    <div className="flex items-center gap-3 text-xs mt-0.5">
-                                      <span className="flex items-center gap-1 text-foreground/70">
-                                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {applicant.rating}
-                                      </span>
+                                    <div className="text-xs mt-0.5 text-foreground/70">
+                                      Reliability: {applicant.reliability}%
                                     </div>
                                   </div>
                                 </div>

@@ -50,11 +50,7 @@ export default function VenuesPage() {
   });
 
   const getAuthHeaders = () => {
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
-    return {
-      'x-user-email': user.email || 'admin@example.com',
-      'x-user-id': user.id || 'U-001'
-    };
+    return {};
   };
 
   useEffect(() => {

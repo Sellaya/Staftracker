@@ -37,7 +37,6 @@ export default function ClientsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [workerSearch, setWorkerSearch] = useState("");
@@ -56,11 +55,7 @@ export default function ClientsPage() {
   });
 
   const getAuthHeaders = () => {
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
-    return {
-      'x-user-email': user.email || 'admin@example.com',
-      'x-user-id': user.id || 'U-001'
-    };
+    return {};
   };
 
   const fetchData = async () => {
@@ -172,6 +167,7 @@ export default function ClientsPage() {
 
   const removeFromPreferred = (workerId: string) => {
     if (!selectedClient) return;
+    if (!confirm("Remove this worker from preferred roster?")) return;
     const updated = {
       ...selectedClient,
       preferredWorkers: selectedClient.preferredWorkers.filter(w => w.id !== workerId)
@@ -199,22 +195,17 @@ export default function ClientsPage() {
     }
   };
 
-  const handleDeleteClient = (id: string) => {
-    setClientToDelete(id);
-  };
-
-  const confirmDeleteClient = async () => {
-    if (!clientToDelete) return;
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this client? This action is irreversible.")) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/clients?id=${clientToDelete}`, {
+      const res = await fetch(`/api/clients?id=${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
       if (res.ok) {
-        setClients(clients.filter(c => c.id !== clientToDelete));
+        setClients(clients.filter(c => c.id !== id));
         setSelectedClientId(null);
-        setClientToDelete(null);
       }
     } catch (error) {
       console.error("Failed to delete client", error);

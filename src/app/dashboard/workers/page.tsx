@@ -4,14 +4,14 @@ import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, Filter, ShieldCheck, AlertCircle, 
-  X, UserCircle, Star, History, DollarSign, 
+  X, UserCircle, History, DollarSign, 
   FileText, ShieldAlert, Edit3, Trash2, Check, X as CancelIcon,
   Plus, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 // Types
 type Note = { id: string; text: string; date: string };
-type SortKey = "name" | "rating" | "reliability" | "status";
+type SortKey = "name" | "reliability" | "status";
 
 // Mock Data
 const INITIAL_WORKERS: any[] = [];
@@ -55,11 +55,7 @@ export default function WorkersPage() {
   }, []);
 
   const getAuthHeaders = () => {
-    const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
-    return {
-      'x-user-email': user.email || 'admin@example.com',
-      'x-user-id': user.id || 'U-001'
-    };
+    return {};
   };
 
   // Accessibility: Close modal on Esc
@@ -167,6 +163,7 @@ export default function WorkersPage() {
   };
 
   const deleteNote = async (workerId: string, noteId: string) => {
+    if (!confirm("Delete this note?")) return;
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
 
@@ -348,8 +345,8 @@ export default function WorkersPage() {
                   <div className="flex items-center">Worker Info <SortIcon columnKey="name" /></div>
                 </th>
                 <th className="px-6 py-4 font-medium">Approved Roles</th>
-                <th className="px-6 py-4 font-medium cursor-pointer group" onClick={() => handleSort("rating")}>
-                  <div className="flex items-center">Rating & Reliability <SortIcon columnKey="rating" /></div>
+                <th className="px-6 py-4 font-medium cursor-pointer group" onClick={() => handleSort("reliability")}>
+                  <div className="flex items-center">Reliability <SortIcon columnKey="reliability" /></div>
                 </th>
                 <th className="px-6 py-4 font-medium">Documents</th>
                 <th className="px-6 py-4 font-medium cursor-pointer group" onClick={() => handleSort("status")}>
@@ -395,9 +392,6 @@ export default function WorkersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1 font-bold">
-                        {worker.rating} <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                      </div>
                       <span className={`text-xs font-medium ${worker.reliability < 90 ? "text-red-500" : "text-emerald-500"}`}>
                         {worker.reliability}% Reliability
                       </span>
@@ -539,15 +533,9 @@ export default function WorkersPage() {
                         </div>
                         <div>
                           <h4 className="text-xs font-bold text-foreground/50 mb-1">PERFORMANCE</h4>
-                          <div className="flex gap-4">
-                            <div>
-                              <span className="text-2xl font-bold">{selectedWorker.rating}</span>
-                              <span className="text-sm text-foreground/70 ml-1">Stars</span>
-                            </div>
-                            <div>
-                              <span className="text-2xl font-bold">{selectedWorker.reliability}%</span>
-                              <span className="text-sm text-foreground/70 ml-1">Reliability</span>
-                            </div>
+                          <div>
+                            <span className="text-2xl font-bold">{selectedWorker.reliability}%</span>
+                            <span className="text-sm text-foreground/70 ml-1">Reliability</span>
                           </div>
                         </div>
                       </div>

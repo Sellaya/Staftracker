@@ -9,14 +9,27 @@
     "documentStatus": "Approved",
     "rating": 4.9,
     "reliability": 98,
-    "roles": ["Bartender", "Server"],
+    "roles": [
+      "Bartender",
+      "Server"
+    ],
     "roleOverrides": [],
     "flags": [],
     "notes": [
-      { "id": "n1", "text": "Highly reliable, great feedback from The Rustic Table.", "date": "Apr 25, 2024" }
+      {
+        "id": "n1",
+        "text": "Highly reliable, great feedback from The Rustic Table.",
+        "date": "Apr 25, 2024"
+      }
     ],
     "shiftHistory": [
-      { "role": "Bartender", "venue": "The Rustic Table", "date": "Apr 28, 2024", "hours": 8, "pay": "$240.00" }
+      {
+        "role": "Bartender",
+        "venue": "The Rustic Table",
+        "date": "Apr 28, 2024",
+        "hours": 8,
+        "pay": "$240.00"
+      }
     ],
     "lifetimeEarnings": "$12,450.00"
   },
@@ -30,11 +43,74 @@
     "documentStatus": "Pending",
     "rating": 4.5,
     "reliability": 85,
-    "roles": ["Security", "General Labor"],
+    "roles": [
+      "Security",
+      "General Labor"
+    ],
     "roleOverrides": [],
     "flags": [],
     "notes": [],
     "shiftHistory": [],
     "lifetimeEarnings": "$0.00"
+  },
+  {
+    "id": "W-1003",
+    "name": "Test Worker",
+    "firstName": "Test",
+    "lastName": "Worker",
+    "email": "test.worker@example.com",
+    "phone": "4165551111",
+    "address": "",
+    "status": "Pending",
+    "documentStatus": "Pending",
+    "rating": 5,
+    "reliability": 100,
+    "roles": [],
+    "roleOverrides": [],
+    "flags": [],
+    "notes": [],
+    "shiftHistory": [],
+    "lifetimeEarnings": "$0.00",
+    "createdAt": "2026-04-30T06:17:54.046Z"
+  },
+  {
+    "id": "W-1004",
+    "name": "angelo angelo",
+    "firstName": "angelo",
+    "lastName": "angelo",
+    "email": "angelo@gmail.com",
+    "phone": "4376770182",
+    "address": "",
+    "status": "Suspended",
+    "documentStatus": "Pending",
+    "rating": 5,
+    "reliability": 100,
+    "roles": [
+      "Bartender",
+      "Server"
+    ],
+    "roleOverrides": [],
+    "flags": [],
+    "notes": [],
+    "shiftHistory": [],
+    "lifetimeEarnings": "$0.00",
+    "legalStatus": "pr",
+    "linkedin": "",
+    "postalCode": "M9V",
+    "neighborhoods": [
+      "King West",
+      "The Danforth",
+      "Etobicoke"
+    ],
+    "yearsExperience": "3 - 5 years",
+    "bio": "",
+    "smartServeHas": true,
+    "smartServeNumber": "",
+    "foodHandlerHas": false,
+    "foodHandlerNumber": "",
+    "resumeFileName": "Medical.pdf",
+    "extraDocFileName": null,
+    "createdAt": "2026-04-30T06:24:08.837Z",
+    "documents": []
   }
 ]

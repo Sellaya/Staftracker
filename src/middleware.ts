@@ -5,31 +5,16 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Paths that require authentication
-  const protectedPaths = ['/dashboard', '/worker/dashboard'];
+  const protectedPaths = ['/dashboard', '/worker'];
   
   const isProtected = protectedPaths.some(p => pathname.startsWith(p));
   
   if (isProtected) {
-    const userCookie = request.cookies.get('user');
-    const userIdHeader = request.headers.get('x-user-id');
-    
-    if (!userCookie && !userIdHeader) {
-      // Redirect to appropriate login page
-      const loginUrl = pathname.startsWith('/worker') ? '/login/worker' : '/login';
-      return NextResponse.redirect(new URL(loginUrl, request.url));
-    }
+    const sessionCookie = request.cookies.get('session');
 
-    // Optional: Role-based check
-    if (userCookie) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userCookie.value));
-        if (pathname.startsWith('/dashboard') && user.role !== 'admin' && user.role !== 'user') {
-           return NextResponse.redirect(new URL('/login/admin', request.url));
-        }
-        if (pathname.startsWith('/worker') && user.role !== 'worker') {
-           return NextResponse.redirect(new URL('/login/worker', request.url));
-        }
-      } catch (e) {}
+    if (!sessionCookie) {
+      const loginUrl = pathname.startsWith('/worker') ? '/login/worker' : '/login/admin';
+      return NextResponse.redirect(new URL(loginUrl, request.url));
     }
   }
 

@@ -30,7 +30,7 @@ export default function AdminLogin() {
         localStorage.setItem("user", JSON.stringify(user));
         router.push("/dashboard");
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         setError(data.error || "Invalid credentials");
       }
     } catch (err) {

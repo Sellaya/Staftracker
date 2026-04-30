@@ -26,7 +26,8 @@ export default function WorkerLogin() {
         localStorage.setItem('user', JSON.stringify(user));
         router.push('/worker/dashboard');
       } else {
-        alert("Invalid worker credentials");
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Invalid worker credentials");
       }
     } catch (e) {
       alert("Login failed");
