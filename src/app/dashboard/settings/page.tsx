@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Shield, Bell, CreditCard, Puzzle, 
@@ -12,6 +12,10 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  const [companyName, setCompanyName] = useState("PoweredByFerrari");
+  const [supportEmail, setSupportEmail] = useState("support@stafftracker.com");
+  const [timezone, setTimezone] = useState("Eastern Time (ET) - Toronto/New York");
   const [theme, setTheme] = useState("dark");
   const [notifications, setNotifications] = useState({
     email: true,
@@ -20,13 +24,57 @@ export default function Settings() {
     marketing: false
   });
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.companyName) setCompanyName(data.companyName);
+        if (data.supportEmail) setSupportEmail(data.supportEmail);
+        if (data.timezone) setTimezone(data.timezone);
+        if (data.theme) setTheme(data.theme);
+        if (data.notifications) setNotifications(data.notifications);
+        
+        // Apply theme to document
+        if (data.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      const payload = {
+        companyName,
+        supportEmail,
+        timezone,
+        theme,
+        notifications
+      };
+      
+      await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      // Apply theme to document
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      
       setIsSaving(false);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    }, 1500);
+    } catch (error) {
+      console.error(error);
+      setIsSaving(false);
+    }
   };
 
   const tabs = [
@@ -116,7 +164,8 @@ export default function Settings() {
                       <label className="text-sm font-bold text-foreground/70">Company Name</label>
                       <input 
                         type="text" 
-                        defaultValue="PoweredByFerrari"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
                         className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
                       />
                     </div>
@@ -124,13 +173,18 @@ export default function Settings() {
                       <label className="text-sm font-bold text-foreground/70">Support Email</label>
                       <input 
                         type="email" 
-                        defaultValue="support@stafftracker.com"
+                        value={supportEmail}
+                        onChange={(e) => setSupportEmail(e.target.value)}
                         className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors"
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2">
                       <label className="text-sm font-bold text-foreground/70">Timezone</label>
-                      <select className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors appearance-none">
+                      <select 
+                        value={timezone}
+                        onChange={(e) => setTimezone(e.target.value)}
+                        className="w-full bg-secondary/20 border border-secondary p-3 rounded-xl outline-none focus:border-primary transition-colors appearance-none"
+                      >
                         <option>Eastern Time (ET) - Toronto/New York</option>
                         <option>Pacific Time (PT) - Vancouver/LA</option>
                         <option>Central Time (CT) - Chicago</option>
