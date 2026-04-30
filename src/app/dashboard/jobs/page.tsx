@@ -283,6 +283,7 @@ export default function JobsManagement() {
   // Edit State
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<JobPost>>({});
+  const [manualSearchResults, setManualSearchResults] = useState<any[]>([]);
 
   // Creation State
   const [isCreating, setIsCreating] = useState(false);
@@ -947,6 +948,7 @@ export default function JobsManagement() {
                         </div>
                       </div>
                     ) : (
+                      <>
                         {/* Applicants Section */}
                         {selectedJob.applicants.length > 0 && (
                           <div className="space-y-3 mb-8">
@@ -1030,9 +1032,9 @@ export default function JobsManagement() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </>
                     )}
-                    )}
+
                   </div>
                 )}
 

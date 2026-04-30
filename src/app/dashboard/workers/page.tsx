@@ -40,6 +40,7 @@ export default function WorkersPage() {
   // Add Worker State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [newWorkerData, setNewWorkerData] = useState({
     name: "", email: "", phone: "", address: "", roles: [] as string[]
   });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -226,7 +227,22 @@ export default function WorkersPage() {
       }
     } catch (e) { console.error(e); }
   };
-
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(newWorkerData)
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setWorkers([added, ...workers]);
+        setIsAddModalOpen(false);
+        setNewWorkerData({ name: "", email: "", phone: "", address: "", roles: [] });
+      }
+    } catch (e) { console.error(e); }
     finally { setIsAdding(false); }
   };
 
@@ -808,6 +824,7 @@ export default function WorkersPage() {
                 </div>
               </form>
             </motion.div>
+          </>
         )}
       </AnimatePresence>
 
