@@ -38,6 +38,7 @@ export default function ClientsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [newClientData, setNewClientData] = useState({
     name: "",
     contactName: "",
@@ -132,15 +133,21 @@ export default function ClientsPage() {
     }
   };
 
-  const handleDeleteClient = async (id: string) => {
+  const handleDeleteClient = (id: string) => {
+    setClientToDelete(id);
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!clientToDelete) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/clients?id=${id}`, {
+      const res = await fetch(`/api/clients?id=${clientToDelete}`, {
         method: 'DELETE',
       });
       if (res.ok) {
-        setClients(clients.filter(c => c.id !== id));
+        setClients(clients.filter(c => c.id !== clientToDelete));
         setSelectedClientId(null);
+        setClientToDelete(null);
       }
     } catch (error) {
       console.error("Failed to delete client", error);
@@ -652,6 +659,47 @@ export default function ClientsPage() {
                 >
                   {isAdding && <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />}
                   Create Client
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {clientToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card w-full max-w-sm rounded-2xl border border-red-500/20 shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-6 text-center space-y-4">
+                <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto">
+                  <Trash2 className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold">Delete Client?</h2>
+                <p className="text-foreground/70 text-sm">
+                  Are you sure you want to permanently delete this client? This action cannot be undone and will remove all associated venues and billing data.
+                </p>
+              </div>
+              <div className="p-4 border-t border-secondary bg-secondary/10 flex justify-end gap-3">
+                <button 
+                  onClick={() => setClientToDelete(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 rounded-xl font-bold text-foreground/70 hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                >
+                  No, Cancel
+                </button>
+                <button 
+                  onClick={confirmDeleteClient}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isDeleting && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  Yes, Delete
                 </button>
               </div>
             </motion.div>

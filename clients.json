@@ -1,19 +1,5 @@
 [
   {
-    "name": "TCC",
-    "contactName": "Angelo",
-    "email": "abc@gmail.com",
-    "phone": "4376770182",
-    "paymentMethod": "Credit Card",
-    "feePercentage": 20,
-    "id": "C-4531",
-    "status": "Active",
-    "customRates": [],
-    "preferredWorkers": [],
-    "invoices": [],
-    "venueCount": 0
-  },
-  {
     "name": "angelo",
     "contactName": "angelo",
     "email": "angelo@angelo.com",
