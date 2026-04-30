@@ -125,7 +125,7 @@ export default function WorkersPage() {
   };
 
   const deleteNote = (workerId: string, noteId: string) => {
-    setWorkers(workers.map(w => w.id === workerId ? { ...w, notes: w.notes.filter(n => n.id !== noteId) } : w));
+    setWorkers(workers.map(w => w.id === workerId ? { ...w, notes: w.notes.filter((n: any) => n.id !== noteId) } : w));
   };
 
   const startEditNote = (note: Note) => {
@@ -137,7 +137,7 @@ export default function WorkersPage() {
     if (!editingNoteText.trim()) return;
     setWorkers(workers.map(w => {
       if (w.id === workerId) {
-        return { ...w, notes: w.notes.map(n => n.id === editingNoteId ? { ...n, text: editingNoteText.trim() } : n) };
+        return { ...w, notes: w.notes.map((n: any) => n.id === editingNoteId ? { ...n, text: editingNoteText.trim() } : n) };
       }
       return w;
     }));
@@ -149,7 +149,7 @@ export default function WorkersPage() {
     setWorkers(workers.map(w => {
       if (w.id === id) {
         const overrides = w.roleOverrides.includes(role) 
-          ? w.roleOverrides.filter(r => r !== role)
+          ? w.roleOverrides.filter((r: any) => r !== role)
           : [...w.roleOverrides, role];
         return { ...w, roleOverrides: overrides };
       }
@@ -241,10 +241,10 @@ export default function WorkersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {worker.roles.map(role => (
+                      {worker.roles.map((role: string) => (
                         <span key={role} className="px-2 py-1 bg-secondary/50 rounded-md text-xs font-medium">{role}</span>
                       ))}
-                      {worker.roleOverrides.map(role => (
+                      {worker.roleOverrides.map((role: string) => (
                         <span key={role} className="px-2 py-1 bg-amber-500/20 text-amber-500 rounded-md text-xs font-bold border border-amber-500/30">
                           {role} (Override)
                         </span>
@@ -368,7 +368,7 @@ export default function WorkersPage() {
                   { id: 'overview', label: 'Overview', icon: UserCircle },
                   { id: 'history', label: 'Shift History', icon: History },
                   { id: 'earnings', label: 'Earnings', icon: DollarSign },
-                ].map(tab => (
+                ].map((tab: any) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -448,10 +448,10 @@ export default function WorkersPage() {
                         </h4>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {selectedWorker.roles.map(role => (
+                        {selectedWorker.roles.map((role: string) => (
                           <span key={role} className="px-3 py-1 bg-secondary rounded-lg text-sm font-medium">{role}</span>
                         ))}
-                        {selectedWorker.roleOverrides.map(role => (
+                        {selectedWorker.roleOverrides.map((role: string) => (
                           <span key={role} className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-lg text-sm font-bold">
                             {role} (Admin Override)
                           </span>
@@ -460,7 +460,7 @@ export default function WorkersPage() {
                       <div className="p-4 rounded-xl border border-dashed border-secondary bg-secondary/5">
                         <p className="text-xs font-medium text-foreground/70 mb-2">Emergency Override Role Assignment:</p>
                         <div className="flex gap-2">
-                          {["Bartender", "Manager", "Security"].filter(r => !selectedWorker.roles.includes(r) && !selectedWorker.roleOverrides.includes(r)).map(role => (
+                          {["Bartender", "Manager", "Security"].filter((r: string) => !selectedWorker.roles.includes(r) && !selectedWorker.roleOverrides.includes(r)).map((role: string) => (
                             <button 
                               key={role}
                               onClick={() => overrideRole(selectedWorker.id, role)}
@@ -480,7 +480,7 @@ export default function WorkersPage() {
                       
                       <div className="space-y-3 mb-6">
                         {selectedWorker.notes.length > 0 ? (
-                          selectedWorker.notes.map(note => (
+                          selectedWorker.notes.map((note: any) => (
                             <div key={note.id} className="p-4 rounded-xl bg-secondary/20 border border-secondary/50 flex flex-col gap-2 group">
                               <div className="flex justify-between items-start">
                                 <span className="text-xs text-foreground/50 font-mono">{note.date}</span>
@@ -548,7 +548,7 @@ export default function WorkersPage() {
                 {activeTab === 'history' && (
                   <div className="space-y-4">
                     {selectedWorker.shiftHistory.length > 0 ? (
-                      selectedWorker.shiftHistory.map((shift, i) => (
+                      selectedWorker.shiftHistory.map((shift: any, i: number) => (
                         <div key={i} className="p-4 rounded-xl border border-secondary bg-secondary/5 flex justify-between items-center">
                           <div>
                             <p className="font-bold">{shift.role} @ {shift.venue}</p>
@@ -576,7 +576,7 @@ export default function WorkersPage() {
                     <h4 className="text-sm font-bold mb-2">Earnings Breakdown</h4>
                     <div className="space-y-3">
                       {selectedWorker.shiftHistory.length > 0 ? (
-                        selectedWorker.shiftHistory.map((shift, i) => (
+                        selectedWorker.shiftHistory.map((shift: any, i: number) => (
                           <div key={i} className="flex justify-between items-center p-3 border-b border-secondary/30 last:border-0">
                             <div>
                               <p className="text-sm font-medium">{shift.date}</p>
