@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Calendar, Clock, MapPin, CheckCircle2, 
   User, CreditCard, ChevronRight, LogOut,
-  Bell, Briefcase, Star, Filter, ShieldCheck, Settings, Loader2
+  Bell, Briefcase, Star, Filter, ShieldCheck, Settings, Loader2, FileText
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -14,8 +14,30 @@ export default function WorkerDashboard() {
   const [worker, setWorker] = useState<any>(null);
   const [shifts, setShifts] = useState<any[]>([]);
   const [openJobs, setOpenJobs] = useState<any[]>([]);
+  const [jobActionMessage, setJobActionMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [applyBusyId, setApplyBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"shifts" | "jobs" | "wallet" | "profile">("shifts");
+
+  const fetchDashboardData = async (user: any) => {
+    const [shiftsRes, jobsRes] = await Promise.all([
+      fetch('/api/shifts'),
+      fetch('/api/jobs')
+    ]);
+    const sData = shiftsRes.ok ? await shiftsRes.json() : [];
+    const jData = jobsRes.ok ? await jobsRes.json() : [];
+
+    setShifts(Array.isArray(sData) ? sData.filter((s: any) => s.workerId === user.id) : []);
+    const open = Array.isArray(jData) ? jData.filter((j: any) => j.status === "Open") : [];
+    setOpenJobs(
+      open.map((j: any) => ({
+        ...j,
+        _myApplication: Array.isArray(j.applicants)
+          ? j.applicants.find((a: any) => a.id === user.id)
+          : null,
+      }))
+    );
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,15 +54,7 @@ export default function WorkerDashboard() {
         }
         localStorage.setItem('user', JSON.stringify(user));
         setWorker(user);
-        const [shiftsRes, jobsRes] = await Promise.all([
-          fetch('/api/shifts'),
-          fetch('/api/jobs')
-        ]);
-        const sData = shiftsRes.ok ? await shiftsRes.json() : [];
-        const jData = jobsRes.ok ? await jobsRes.json() : [];
-        
-        setShifts(Array.isArray(sData) ? sData.filter((s: any) => s.workerId === user.id) : []);
-        setOpenJobs(Array.isArray(jData) ? jData.filter((j: any) => j.status === "Open") : []);
+        await fetchDashboardData(user);
       } catch (e) {
         console.error("Fetch error:", e);
       } finally {
@@ -51,22 +65,37 @@ export default function WorkerDashboard() {
   }, [router]);
 
   const handleApply = async (jobId: string) => {
+    if (!worker) return;
+    setJobActionMessage(null);
+    setApplyBusyId(jobId);
     try {
       const res = await fetch('/api/jobs/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobId, workerId: worker.id, workerName: worker.name })
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        alert("Application sent successfully!");
-        setOpenJobs(openJobs.filter(j => j.id !== jobId));
+        setJobActionMessage({
+          type: "ok",
+          text:
+            data.message === "Already applied"
+              ? "You are already on the admin review list for that shift."
+              : "Application sent. Wait for admin confirmation before it appears in Upcoming Shifts.",
+        });
+        await fetchDashboardData(worker);
+        return;
       }
-    } catch (e) {
-      alert("Failed to apply");
+      setJobActionMessage({ type: "err", text: data.error || "Could not apply." });
+    } catch {
+      setJobActionMessage({ type: "err", text: "Failed to apply." });
+    } finally {
+      setApplyBusyId(null);
     }
   };
 
   const handleClockIn = async (shift: any) => {
+    if (!worker) return;
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
       return;
@@ -74,23 +103,48 @@ export default function WorkerDashboard() {
 
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
-      
-      await fetch('/api/shifts', {
-        method: 'PUT',
+
+      const res = await fetch('/api/shifts/actions', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...shift, 
-          status: "Active", 
+        body: JSON.stringify({
+          action: 'worker_check_in',
+          shiftId: shift.id,
           actualCheckIn: new Date().toLocaleTimeString(),
           gpsStatus: latitude && longitude ? "Verified" : "Unavailable",
           gpsLatitude: latitude,
           gpsLongitude: longitude
         })
       });
-      window.location.reload();
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Unable to check in.");
+        return;
+      }
+      await fetchDashboardData(worker);
     }, () => {
       alert("Unable to verify location. Please enable geolocation and retry.");
     });
+  };
+
+  const handleClockOut = async (shift: any) => {
+    if (!worker) return;
+    const res = await fetch('/api/shifts/actions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'worker_check_out',
+        shiftId: shift.id,
+        actualCheckOut: new Date().toLocaleTimeString()
+      })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Unable to check out.");
+      return;
+    }
+    await fetchDashboardData(worker);
   };
 
   const handleLogout = async () => {
@@ -190,20 +244,91 @@ export default function WorkerDashboard() {
                         <Clock size={14} className="text-primary" /> {shift.scheduledStart}
                       </div>
                     </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded border ${
+                        shift.paymentStatus === "paid"
+                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                          : shift.paymentStatus === "finalized"
+                            ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                            : "bg-secondary text-foreground/60 border-secondary"
+                      }`}>
+                        Pay: {shift.paymentStatus || "pending"}
+                      </span>
+                      <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded border ${
+                        shift.invoiceStatus === "invoiced"
+                          ? "bg-primary/10 text-primary border-primary/20"
+                          : "bg-secondary text-foreground/60 border-secondary"
+                      }`}>
+                        Invoice: {shift.invoiceStatus || "pending"}
+                      </span>
+                      {shift.timesheetId && (
+                        <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded border bg-blue-500/10 text-blue-500 border-blue-500/20">
+                          Timesheet Ready
+                        </span>
+                      )}
+                    </div>
 
                     <div className="pt-4 border-t border-secondary/20">
-                      <button 
-                        onClick={() => handleClockIn(shift)}
-                        className={`w-full py-3 font-black rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                          shift.status === "Active" ? "bg-emerald-500 text-white" : "bg-foreground text-background hover:bg-primary hover:text-primary-foreground"
-                        }`}
-                      >
-                        {shift.status === "Active" ? "Active Now" : "Clock In"} <ChevronRight size={16} />
-                      </button>
+                      {shift.status === "Active" ? (
+                        <button
+                          onClick={() => handleClockOut(shift)}
+                          className="w-full py-3 font-black rounded-2xl flex items-center justify-center gap-2 transition-colors bg-emerald-500 text-white hover:bg-emerald-600"
+                        >
+                          Clock Out <ChevronRight size={16} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleClockIn(shift)}
+                          className="w-full py-3 font-black rounded-2xl flex items-center justify-center gap-2 transition-colors bg-foreground text-background hover:bg-primary hover:text-primary-foreground"
+                        >
+                          Clock In <ChevronRight size={16} />
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <FileText size={20} className="text-primary" /> Completed & Review
+                </h3>
+                <span className="text-xs font-bold text-foreground/50">{completedShifts.length} Completed</span>
+              </div>
+              {completedShifts.slice(0, 5).map((shift) => (
+                <div key={shift.id} className="p-4 rounded-2xl bg-secondary/10 border border-secondary space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-sm">{shift.role}</p>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded border bg-blue-500/10 text-blue-500 border-blue-500/20">
+                      Completed
+                    </span>
+                  </div>
+                  <p className="text-xs text-foreground/50">{shift.date} • {shift.venueName}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded border ${
+                      shift.isApproved ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-secondary text-foreground/60 border-secondary"
+                    }`}>
+                      {shift.isApproved ? "Approved" : "Approval Pending"}
+                    </span>
+                    <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded border ${
+                      shift.paymentStatus === "paid"
+                        ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                        : shift.paymentStatus === "finalized"
+                          ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                          : "bg-secondary text-foreground/60 border-secondary"
+                    }`}>
+                      Pay: {shift.paymentStatus || "pending"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {completedShifts.length === 0 && (
+                <div className="py-8 text-center border border-dashed border-secondary rounded-2xl bg-secondary/5">
+                  <p className="text-foreground/40 text-sm italic">Completed shifts will appear here with approval and payout states.</p>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -213,13 +338,32 @@ export default function WorkerDashboard() {
             <h3 className="text-xl font-bold flex items-center gap-2 text-primary">
               <Briefcase size={24} /> Available Jobs
             </h3>
+            {jobActionMessage && (
+              <div
+                className={`p-3 rounded-2xl text-sm font-semibold border ${
+                  jobActionMessage.type === "ok"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-red-500/30 bg-red-500/10 text-red-600"
+                }`}
+              >
+                {jobActionMessage.text}
+              </div>
+            )}
+            <p className="text-xs text-foreground/50">
+              Use Open Shifts Hub to review full site instructions before applying. Quick apply here still uses the same admin confirmation flow.
+            </p>
             <div className="space-y-4">
               {openJobs.length === 0 && (
                 <div className="py-12 text-center border border-dashed border-secondary rounded-3xl bg-secondary/5">
                   <p className="text-foreground/40 text-sm italic">No new jobs available right now.</p>
                 </div>
               )}
-              {openJobs.map((job) => (
+              {openJobs.map((job) => {
+                const st = job._myApplication?.status || (job._myApplication ? "pending_admin" : null);
+                const pending = st === "pending_admin";
+                const rejected = st === "rejected";
+                const withdrawn = st === "withdrawn";
+                return (
                 <motion.div 
                   key={job.id}
                   className="p-5 rounded-3xl bg-secondary/10 border border-secondary"
@@ -231,18 +375,37 @@ export default function WorkerDashboard() {
                     </div>
                     {job.isUrgent && <span className="px-2 py-0.5 bg-accent/10 text-accent text-[10px] font-black rounded uppercase">Urgent</span>}
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-foreground/40 mb-6">
+                  <div className="flex items-center gap-4 text-xs text-foreground/40 mb-4">
                     <span className="flex items-center gap-1"><Calendar size={12}/> {job.date}</span>
                     <span className="flex items-center gap-1"><Clock size={12}/> {job.hours}h</span>
                   </div>
+                  {pending && (
+                    <div className="mb-3 text-xs font-bold text-amber-600 border border-amber-500/25 bg-amber-500/10 rounded-xl px-3 py-2">
+                      Awaiting admin confirmation
+                    </div>
+                  )}
+                  {rejected && (
+                    <div className="mb-3 text-xs text-red-600 border border-red-500/20 bg-red-500/5 rounded-xl px-3 py-2">
+                      Not selected{job._myApplication?.rejectionReason ? `: ${job._myApplication.rejectionReason}` : "."}
+                    </div>
+                  )}
+                  {withdrawn && (
+                    <div className="mb-3 text-xs text-foreground/60 border border-secondary rounded-xl px-3 py-2">
+                      You withdrew your application.
+                    </div>
+                  )}
                   <button 
+                    type="button"
                     onClick={() => handleApply(job.id)}
-                    className="w-full py-3 bg-primary text-primary-foreground font-black rounded-2xl hover:bg-primary/90 transition-colors"
+                    disabled={pending || applyBusyId === job.id}
+                    className="w-full py-3 bg-primary text-primary-foreground font-black rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
-                    Apply Now
+                    {applyBusyId === job.id ? <Loader2 size={18} className="animate-spin" /> : null}
+                    {pending ? "On admin review" : "Apply Now"}
                   </button>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

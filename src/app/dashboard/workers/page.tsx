@@ -81,11 +81,15 @@ export default function WorkersPage() {
       const matchesSearch = w.name.toLowerCase().includes(searchQuery.toLowerCase()) || w.id.toLowerCase().includes(searchQuery.toLowerCase());
       if (!matchesSearch) return false;
 
+      const docs = Array.isArray(w.documents) ? w.documents : [];
+      const hasRejectedDoc = docs.some((d: any) => d?.status === "Rejected");
+
       if (filter === "All") return true;
+      if (filter === "Pending") return w.documentStatus === "Pending" && !hasRejectedDoc;
+      if (filter === "Approved") return w.documentStatus === "Approved";
       if (filter === "Active") return w.status === "Active";
+      if (filter === "Rejected") return hasRejectedDoc;
       if (filter === "Suspended") return w.status === "Suspended";
-      if (filter === "Pending Docs") return w.documentStatus === "Pending";
-      if (filter === "Flagged") return w.flags.length > 0;
       
       return true;
     });
@@ -148,7 +152,7 @@ export default function WorkersPage() {
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     };
     
-    const updatedNotes = [noteObj, ...worker.notes];
+    const updatedNotes = [noteObj, ...(Array.isArray(worker.notes) ? worker.notes : [])];
     try {
       const res = await fetch('/api/workers', {
         method: 'PUT',
@@ -167,7 +171,7 @@ export default function WorkersPage() {
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
 
-    const updatedNotes = worker.notes.filter((n: any) => n.id !== noteId);
+    const updatedNotes = (Array.isArray(worker.notes) ? worker.notes : []).filter((n: any) => n.id !== noteId);
     try {
       const res = await fetch('/api/workers', {
         method: 'PUT',
@@ -190,7 +194,9 @@ export default function WorkersPage() {
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
 
-    const updatedNotes = worker.notes.map((n: any) => n.id === editingNoteId ? { ...n, text: editingNoteText.trim() } : n);
+    const updatedNotes = (Array.isArray(worker.notes) ? worker.notes : []).map((n: any) =>
+      n.id === editingNoteId ? { ...n, text: editingNoteText.trim() } : n
+    );
     try {
       const res = await fetch('/api/workers', {
         method: 'PUT',
@@ -209,9 +215,10 @@ export default function WorkersPage() {
     const worker = workers.find(w => w.id === id);
     if (!worker) return;
     
-    const overrides = worker.roleOverrides.includes(role) 
-      ? worker.roleOverrides.filter((r: any) => r !== role)
-      : [...worker.roleOverrides, role];
+    const existingOverrides = Array.isArray(worker.roleOverrides) ? worker.roleOverrides : [];
+    const overrides = existingOverrides.includes(role)
+      ? existingOverrides.filter((r: any) => r !== role)
+      : [...existingOverrides, role];
       
     try {
       const res = await fetch('/api/workers', {
@@ -323,7 +330,7 @@ export default function WorkersPage() {
             />
           </div>
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-            {["All", "Active", "Suspended", "Pending Docs", "Flagged"].map(f => (
+            {["All", "Pending", "Approved", "Active", "Rejected", "Suspended"].map(f => (
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
@@ -372,7 +379,9 @@ export default function WorkersPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-semibold group-hover:text-primary transition-colors">{worker.name}</p>
-                          {worker.flags.length > 0 && <ShieldAlert className="w-3 h-3 text-red-500" />}
+                          {(Array.isArray(worker.flags) ? worker.flags : []).length > 0 && (
+                            <ShieldAlert className="w-3 h-3 text-red-500" />
+                          )}
                         </div>
                         <p className="text-xs text-foreground/50">{worker.id}</p>
                       </div>
@@ -380,10 +389,10 @@ export default function WorkersPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {worker.roles.map((role: string) => (
+                      {(Array.isArray(worker.roles) ? worker.roles : []).map((role: string) => (
                         <span key={role} className="px-2 py-1 bg-secondary/50 rounded-md text-xs font-medium">{role}</span>
                       ))}
-                      {worker.roleOverrides.map((role: string) => (
+                      {(Array.isArray(worker.roleOverrides) ? worker.roleOverrides : []).map((role: string) => (
                         <span key={role} className="px-2 py-1 bg-amber-500/20 text-amber-500 rounded-md text-xs font-bold border border-amber-500/30">
                           {role} (Override)
                         </span>
@@ -486,7 +495,11 @@ export default function WorkersPage() {
                     <h2 className="text-2xl font-bold flex items-center gap-2">
                       {selectedWorker.name}
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        selectedWorker.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                        selectedWorker.status === "Active"
+                          ? "bg-emerald-500/10 text-emerald-500"
+                          : selectedWorker.status === "Pending"
+                            ? "bg-amber-500/10 text-amber-600"
+                            : "bg-red-500/10 text-red-500"
                       }`}>
                         {selectedWorker.status}
                       </span>
@@ -529,7 +542,30 @@ export default function WorkersPage() {
                           <h4 className="text-xs font-bold text-foreground/50 mb-1">CONTACT INFO</h4>
                           <p className="text-sm">{selectedWorker.email}</p>
                           <p className="text-sm">{selectedWorker.phone}</p>
-                          <p className="text-sm">{selectedWorker.address}</p>
+                          <p className="text-sm">{selectedWorker.address || "—"}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-foreground/50 mb-1">LOCATION & AVAILABILITY (MVP)</h4>
+                          <p className="text-sm">
+                            <span className="text-foreground/50">Postal FSA:</span>{" "}
+                            {selectedWorker.postalCode || "—"}
+                          </p>
+                          <p className="text-sm mt-1">
+                            <span className="text-foreground/50">Areas:</span>{" "}
+                            {(Array.isArray(selectedWorker.neighborhoods) ? selectedWorker.neighborhoods : []).join(", ") ||
+                              "—"}
+                          </p>
+                          <p className="text-sm mt-1">
+                            <span className="text-foreground/50">Experience:</span>{" "}
+                            {selectedWorker.yearsExperience || "—"}
+                          </p>
+                          <p className="text-sm mt-1">
+                            <span className="text-foreground/50">Legal status:</span>{" "}
+                            {selectedWorker.legalStatus || "—"}
+                          </p>
+                          {selectedWorker.bio ? (
+                            <p className="text-xs text-foreground/70 mt-2 leading-relaxed">{selectedWorker.bio}</p>
+                          ) : null}
                         </div>
                         <div>
                           <h4 className="text-xs font-bold text-foreground/50 mb-1">PERFORMANCE</h4>
@@ -569,7 +605,11 @@ export default function WorkersPage() {
                                   : "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
                               }`}
                             >
-                              {selectedWorker.status === "Active" ? "Suspend Worker" : "Unsuspend Worker"}
+                              {selectedWorker.status === "Active"
+                                ? "Suspend Worker"
+                                : selectedWorker.status === "Suspended"
+                                  ? "Unsuspend (set Active)"
+                                  : "Set Active (requires approved docs)"}
                             </button>
                             <button 
                               onClick={() => handleDeleteWorker(selectedWorker.id)}
@@ -589,10 +629,10 @@ export default function WorkersPage() {
                         </h4>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-4">
-                        {selectedWorker.roles.map((role: string) => (
+                        {(Array.isArray(selectedWorker.roles) ? selectedWorker.roles : []).map((role: string) => (
                           <span key={role} className="px-3 py-1 bg-secondary rounded-lg text-sm font-medium">{role}</span>
                         ))}
-                        {selectedWorker.roleOverrides.map((role: string) => (
+                        {(Array.isArray(selectedWorker.roleOverrides) ? selectedWorker.roleOverrides : []).map((role: string) => (
                           <span key={role} className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-lg text-sm font-bold">
                             {role} (Admin Override)
                           </span>
@@ -601,7 +641,11 @@ export default function WorkersPage() {
                       <div className="p-4 rounded-xl border border-dashed border-secondary bg-secondary/5">
                         <p className="text-xs font-medium text-foreground/70 mb-2">Emergency Override Role Assignment:</p>
                         <div className="flex gap-2">
-                          {["Bartender", "Manager", "Security"].filter((r: string) => !selectedWorker.roles.includes(r) && !selectedWorker.roleOverrides.includes(r)).map((role: string) => (
+                          {["Bartender", "Manager", "Security"].filter((r: string) => {
+                            const roles = Array.isArray(selectedWorker.roles) ? selectedWorker.roles : [];
+                            const overrides = Array.isArray(selectedWorker.roleOverrides) ? selectedWorker.roleOverrides : [];
+                            return !roles.includes(r) && !overrides.includes(r);
+                          }).map((role: string) => (
                             <button 
                               key={role}
                               onClick={() => overrideRole(selectedWorker.id, role)}
@@ -620,8 +664,8 @@ export default function WorkersPage() {
                       </h4>
                       
                       <div className="space-y-3 mb-6">
-                        {selectedWorker.notes.length > 0 ? (
-                          selectedWorker.notes.map((note: any) => (
+                        {(Array.isArray(selectedWorker.notes) ? selectedWorker.notes : []).length > 0 ? (
+                          (Array.isArray(selectedWorker.notes) ? selectedWorker.notes : []).map((note: any) => (
                             <div key={note.id} className="p-4 rounded-xl bg-secondary/20 border border-secondary/50 flex flex-col gap-2 group">
                               <div className="flex justify-between items-start">
                                 <span className="text-xs text-foreground/50 font-mono">{note.date}</span>

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import path from "path";
 import { hashPassword, readUsersDb, writeUsersDb } from "@/lib/auth";
 import { generateWorkerId, readJsonFile, withFileLock, writeJsonFileAtomic } from "@/lib/json-db";
+import { getSupabaseServerClient, hasSupabaseEnv } from "@/lib/supabase";
+import { nextTableId } from "@/lib/supabase-db";
+import { workerSignupToDbRow } from "@/lib/worker-supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +43,87 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
     }
 
+    const fullName = `${firstName} ${lastName}`.trim();
+    const now = new Date().toISOString();
+
+    if (hasSupabaseEnv()) {
+      const supabase = getSupabaseServerClient();
+      const { data: dupUsers, error: dupErr } = await supabase.from("users").select("id").ilike("email", email).limit(1);
+      if (dupErr) return NextResponse.json({ error: dupErr.message }, { status: 500 });
+      if (dupUsers && dupUsers.length > 0) {
+        return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+      }
+
+      const workerId = await nextTableId("W", "workers");
+      const documents = [
+        ...(resumeFileName
+          ? [
+              {
+                id: `DOC-${workerId}-resume`,
+                type: "Resume",
+                fileName: resumeFileName,
+                uploadedAt: now,
+                status: "Pending",
+              },
+            ]
+          : []),
+        ...(extraDocFileName
+          ? [
+              {
+                id: `DOC-${workerId}-extra`,
+                type: "Additional Document",
+                fileName: extraDocFileName,
+                uploadedAt: now,
+                status: "Pending",
+              },
+            ]
+          : []),
+      ];
+
+      const hashed = hashPassword(password);
+      const { error: userErr } = await supabase.from("users").insert({
+        id: workerId,
+        name: fullName,
+        email,
+        password: hashed,
+        role: "worker",
+        created_at: now,
+      });
+      if (userErr) return NextResponse.json({ error: userErr.message }, { status: 500 });
+
+      const workerPayload = workerSignupToDbRow({
+        id: workerId,
+        fullName,
+        firstName,
+        lastName,
+        email,
+        phone,
+        legalStatus,
+        linkedin,
+        postalCode,
+        neighborhoods: neighborhoods.map((n: unknown) => String(n)),
+        primaryRoles: primaryRoles.map((r: unknown) => String(r)),
+        yearsExperience,
+        bio,
+        smartServeHas,
+        smartServeNumber,
+        foodHandlerHas,
+        foodHandlerNumber,
+        resumeFileName,
+        extraDocFileName,
+        documents,
+        now,
+      });
+
+      const { error: wErr } = await supabase.from("workers").insert(workerPayload);
+      if (wErr) {
+        await supabase.from("users").delete().eq("id", workerId);
+        return NextResponse.json({ error: wErr.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, id: workerId }, { status: 201 });
+    }
+
     const usersDb = await readUsersDb();
     const existing = usersDb.users.find((u: any) => u.email?.toLowerCase() === email);
     if (existing) {
@@ -48,8 +132,6 @@ export async function POST(request: Request) {
 
     const existingWorkers = await readJsonFile<any[]>(workersPath, []);
     const workerId = generateWorkerId(existingWorkers.map((w: any) => String(w.id || "")));
-    const fullName = `${firstName} ${lastName}`.trim();
-    const now = new Date().toISOString();
 
     const userRecord = {
       id: workerId,
@@ -89,6 +171,26 @@ export async function POST(request: Request) {
       foodHandlerNumber,
       resumeFileName,
       extraDocFileName,
+      documents: [
+        ...(resumeFileName
+          ? [{
+              id: `DOC-${workerId}-resume`,
+              type: "Resume",
+              fileName: resumeFileName,
+              uploadedAt: now,
+              status: "Pending",
+            }]
+          : []),
+        ...(extraDocFileName
+          ? [{
+              id: `DOC-${workerId}-extra`,
+              type: "Additional Document",
+              fileName: extraDocFileName,
+              uploadedAt: now,
+              status: "Pending",
+            }]
+          : []),
+      ],
       createdAt: now,
     };
 

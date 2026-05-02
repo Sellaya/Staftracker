@@ -106,7 +106,7 @@ export default function WorkerProfile() {
 
     const now = Date.now();
     const newDocs: WorkerDocument[] = filesToUpload.map((file, index) => ({
-      id: `DOC-${now}-${index}`,
+      id: `DOC-${worker.id}-${now}-${index}`,
       type: resolvedType,
       fileName: file.name,
       uploadedAt: new Date().toISOString(),

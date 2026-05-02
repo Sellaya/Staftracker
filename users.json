@@ -1,44 +1,12 @@
 {
   "users": [
     {
-      "id": "U-001",
+      "id": "U-0001",
       "name": "Super Admin",
       "email": "admin@example.com",
       "password": "pbkdf2:sha512:120000:7e0cbfb63806137fe5264aa55d6980fd:a7247bc87cbe7f380afdfbc200ad01380847fc7d98520e6d6375adec16d4f2b90cd9ed0fefcafb7cfc341f8428cd2b2bbf66410823b9366381041476b2decdec",
       "role": "admin",
       "createdAt": "2024-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "U-95111",
-      "name": "Operations Manager",
-      "email": "user@example.com",
-      "password": "password",
-      "role": "user",
-      "createdAt": "2026-04-30T04:51:37.184Z"
-    },
-    {
-      "id": "W-1001",
-      "name": "Sarah Connor",
-      "email": "worker@example.com",
-      "password": "password",
-      "role": "worker",
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    },
-    {
-      "id": "W-1003",
-      "name": "Test Worker",
-      "email": "test.worker@example.com",
-      "password": "pbkdf2:sha512:120000:6c4736cb4d6ada635a031fd329d9a356:3262b5d8c1d1c3a4cbf72b634b6818415cf3b1c803885761c38c4a22ed907951ad70bf05fd55b984eb29d7464d383cd76a9dd5f34af32d144263cba2b925adb1",
-      "role": "worker",
-      "createdAt": "2026-04-30T06:17:54.046Z"
-    },
-    {
-      "id": "W-1004",
-      "name": "angelo angelo",
-      "email": "angelo@gmail.com",
-      "password": "pbkdf2:sha512:120000:497de8fdbdb0e65d89a32e3b69bac5a6:8edeb9cda2b6aa94deac5d741978b6b0e55ba57434abe1b0ef01b433ef9c39651137999f24f87d6bc955f3d98a47511aa3aa09c0937f6cdada963e486142dc38",
-      "role": "worker",
-      "createdAt": "2026-04-30T06:24:08.837Z"
     }
   ]
 }

@@ -3,7 +3,7 @@
 import { 
   LayoutDashboard, Users, Settings, LogOut, Bell, 
   Building2, CalendarDays, FileCheck2, MapPin,
-  AlertTriangle, BarChart3, BrainCircuit, Briefcase 
+  Briefcase 
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -20,39 +20,56 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const res = await fetch("/api/me", { cache: "no-store" });
         if (!res.ok) {
           localStorage.removeItem("user");
-          router.push("/login/admin");
+          router.push("/");
           return;
         }
         const sessionUser = await res.json();
         localStorage.setItem("user", JSON.stringify(sessionUser));
         setUser(sessionUser);
+        if (sessionUser.role === "user") {
+          const allowed = new Set(["/dashboard", "/dashboard/jobs", "/dashboard/venues", "/dashboard/shifts"]);
+          if (!allowed.has(pathname)) {
+            router.push("/dashboard/jobs");
+          }
+        }
       } catch {
-        router.push("/login/admin");
+        router.push("/");
       }
     };
     bootstrap();
-  }, [router]);
+  }, [router, pathname]);
 
   const handleLogout = async () => {
+    const role = user?.role;
     await fetch("/api/logout", { method: "POST" });
     localStorage.removeItem("user");
-    router.push("/login/admin");
+    if (role === "user") router.push("/login/client");
+    else router.push("/login/admin");
   };
 
   if (!user) return null; // Prevent flicker before redirect
 
-  const navigation = [
+  type NavItem = { name: string; href: string; icon: any; adminOnly?: boolean };
+  const baseNavigation: NavItem[] = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase },
-    { name: "Workers", href: "/dashboard/workers", icon: Users },
     { name: "Clients", href: "/dashboard/clients", icon: Building2 },
     { name: "Venues", href: "/dashboard/venues", icon: MapPin },
     { name: "Shifts", href: "/dashboard/shifts", icon: CalendarDays },
+    { name: "Workers", href: "/dashboard/workers", icon: Users },
     { name: "Documents", href: "/dashboard/documents", icon: FileCheck2 },
-    { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-    { name: "AI Matchmaking", href: "/dashboard/ai", icon: BrainCircuit },
     { name: "Settings", href: "/dashboard/settings", icon: Settings, adminOnly: true },
-  ].filter(item => !item.adminOnly || user.role === 'admin');
+  ];
+  const clientNavigation: NavItem[] = [
+    { name: "Details", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Jobs", href: "/dashboard/jobs", icon: Briefcase },
+    { name: "Venues", href: "/dashboard/venues", icon: MapPin },
+    { name: "Shifts", href: "/dashboard/shifts", icon: CalendarDays },
+  ];
+  const navigation = (user.role === "user" ? clientNavigation : baseNavigation).filter((item: NavItem) => {
+    if (user.role === "user") return true;
+    return !item.adminOnly || user.role === 'admin' || user.role === "super_admin";
+  });
 
   return (
     <div className="min-h-screen bg-background flex">

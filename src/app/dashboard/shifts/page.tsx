@@ -32,17 +32,23 @@ type Shift = {
   isApproved?: boolean;
   isInvoiced?: boolean;
   invoiceId?: string;
+  timesheetId?: string;
+  paymentStatus?: "pending" | "finalized" | "paid";
+  invoiceStatus?: "pending" | "invoiced";
 };
 
 export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
   const [editingTimes, setEditingTimes] = useState(false);
   const [tempCheckIn, setTempCheckIn] = useState("");
   const [tempCheckOut, setTempCheckOut] = useState("");
+  const isClientUser = currentUser?.role === "user";
+  const isAdminUser = currentUser?.role === "admin" || currentUser?.role === "super_admin";
 
   const getAuthHeaders = () => {
     return {};
@@ -62,6 +68,10 @@ export default function ShiftsPage() {
 
   useEffect(() => {
     fetchShifts();
+    fetch('/api/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setCurrentUser(data))
+      .catch(() => setCurrentUser(null));
   }, []);
 
   const filteredShifts = useMemo(() => {
@@ -111,6 +121,25 @@ export default function ShiftsPage() {
     }
   };
 
+  const performShiftAction = async (id: string, action: string, extra: Record<string, any> = {}) => {
+    try {
+      const res = await fetch('/api/shifts/actions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ shiftId: id, action, ...extra })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Action failed");
+        return;
+      }
+      const updated = await res.json();
+      setShifts((prev) => prev.map((s) => (s.id === id ? { ...s, ...updated } : s)));
+    } catch (e) {
+      console.error("Failed to perform shift action", e);
+    }
+  };
+
   const saveTimeOverride = () => {
     if (!selectedShiftId) return;
     updateShift(selectedShiftId, {
@@ -125,7 +154,7 @@ export default function ShiftsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Active Shifts & Field Ops</h1>
-          <p className="text-foreground/70 mt-1">Monitor live field operations and finalise billing hours.</p>
+          <p className="text-foreground/70 mt-1">{isClientUser ? "Review shift progress, approvals, and billing status." : "Monitor live field operations and finalise billing hours."}</p>
         </div>
       </div>
 
@@ -199,9 +228,26 @@ export default function ShiftsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         {shift.isApproved && <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase rounded border border-emerald-500/20">Approved</span>}
                         {shift.isInvoiced && <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black uppercase rounded border border-primary/20">Billed</span>}
+                        {shift.timesheetId && <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase rounded border border-blue-500/20">Timesheet</span>}
+                        <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded border ${
+                          shift.paymentStatus === "paid"
+                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                            : shift.paymentStatus === "finalized"
+                              ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                              : "bg-secondary text-foreground/60 border-secondary"
+                        }`}>
+                          Pay: {shift.paymentStatus || "pending"}
+                        </span>
+                        <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded border ${
+                          shift.invoiceStatus === "invoiced"
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-secondary text-foreground/60 border-secondary"
+                        }`}>
+                          Invoice: {shift.invoiceStatus || "pending"}
+                        </span>
                       </div>
                       <p className={`text-xs font-bold ${shift.status === "Active" ? "text-emerald-500" : "text-foreground/50"}`}>{shift.status}</p>
                     </div>
@@ -285,7 +331,7 @@ export default function ShiftsPage() {
                     </div>
                   </div>
 
-                  {editingTimes && (
+                  {editingTimes && isAdminUser && (
                     <div className="pt-4 border-t border-secondary/50 animate-in fade-in slide-in-from-top-2">
                       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-4">
                         <p className="text-xs font-bold text-amber-500 flex items-center gap-2">
@@ -312,7 +358,7 @@ export default function ShiftsPage() {
                     </div>
                   )}
 
-                  {!editingTimes && !selectedShift.isInvoiced && (
+                  {!editingTimes && !selectedShift.isInvoiced && isAdminUser && (
                     <button 
                       onClick={() => { setTempCheckIn(selectedShift.actualCheckIn || ""); setTempCheckOut(selectedShift.actualCheckOut || ""); setEditingTimes(true); }}
                       className="w-full py-2.5 border border-secondary border-dashed rounded-xl text-xs font-bold text-foreground/50 hover:border-primary hover:text-primary transition-all"
@@ -327,10 +373,32 @@ export default function ShiftsPage() {
                   )}
                 </div>
 
+                <div className="p-4 rounded-xl border border-secondary bg-secondary/5">
+                  <p className="text-xs font-bold text-foreground/50 mb-3 uppercase tracking-widest">Lifecycle Status</p>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="rounded-lg border border-secondary p-2">
+                      <p className="text-foreground/50">Timesheet</p>
+                      <p className="font-bold">{selectedShift.timesheetId ? selectedShift.timesheetId : "Not created"}</p>
+                    </div>
+                    <div className="rounded-lg border border-secondary p-2">
+                      <p className="text-foreground/50">Approval</p>
+                      <p className="font-bold">{selectedShift.isApproved ? "Approved" : "Pending"}</p>
+                    </div>
+                    <div className="rounded-lg border border-secondary p-2">
+                      <p className="text-foreground/50">Payment</p>
+                      <p className="font-bold capitalize">{selectedShift.paymentStatus || "pending"}</p>
+                    </div>
+                    <div className="rounded-lg border border-secondary p-2">
+                      <p className="text-foreground/50">Invoice</p>
+                      <p className="font-bold capitalize">{selectedShift.invoiceStatus || "pending"}</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-4 space-y-3">
-                  <h3 className="text-xs font-bold text-foreground/50 mb-2 uppercase tracking-widest">Admin Controls</h3>
+                  <h3 className="text-xs font-bold text-foreground/50 mb-2 uppercase tracking-widest">{isClientUser ? "Client Actions" : "Admin Controls"}</h3>
                   
-                  {selectedShift.status === "Active" && (
+                  {selectedShift.status === "Active" && isAdminUser && (
                     <button 
                       onClick={() => updateShift(selectedShift.id, { status: "Completed", actualCheckOut: new Date().toLocaleTimeString() })}
                       className="w-full flex items-center justify-between p-4 rounded-xl border border-primary bg-primary/10 hover:bg-primary/20 transition-colors group"
@@ -347,20 +415,65 @@ export default function ShiftsPage() {
 
                   {!selectedShift.isApproved && selectedShift.status === "Completed" && !selectedShift.isInvoiced && (
                     <button 
-                      onClick={() => updateShift(selectedShift.id, { isApproved: true })}
+                      onClick={() => performShiftAction(selectedShift.id, "client_approve_timesheet")}
                       className="w-full flex items-center justify-between p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                         <div className="text-left">
-                          <p className="font-bold text-sm text-emerald-500">Approve Hours</p>
-                          <p className="text-xs text-emerald-500/70 mt-0.5">Finalize hours for client invoicing.</p>
+                          <p className="font-bold text-sm text-emerald-500">Approve Timesheet</p>
+                          <p className="text-xs text-emerald-500/70 mt-0.5">Client/company approval for worked hours.</p>
                         </div>
                       </div>
                     </button>
                   )}
 
-                  {selectedShift.isFlagged && (
+                  {selectedShift.isApproved && isAdminUser && (
+                    <button
+                      onClick={() => performShiftAction(selectedShift.id, "admin_finalize_payment")}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                        <div className="text-left">
+                          <p className="font-bold text-sm text-blue-500">Finalize Payment</p>
+                          <p className="text-xs text-blue-500/70 mt-0.5">Admin confirms payment batch readiness.</p>
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {selectedShift.isApproved && isAdminUser && (
+                    <button
+                      onClick={() => performShiftAction(selectedShift.id, "admin_mark_paid")}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <div className="text-left">
+                          <p className="font-bold text-sm text-emerald-500">Mark Worker Paid</p>
+                          <p className="text-xs text-emerald-500/70 mt-0.5">Manual payout done.</p>
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {selectedShift.isApproved && isAdminUser && !selectedShift.isInvoiced && (
+                    <button
+                      onClick={() => performShiftAction(selectedShift.id, "admin_mark_invoiced")}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <div className="text-left">
+                          <p className="font-bold text-sm text-primary">Mark Client Invoiced</p>
+                          <p className="text-xs text-primary/70 mt-0.5">Manual invoice issued.</p>
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {selectedShift.isFlagged && isAdminUser && (
                     <button 
                       onClick={() => updateShift(selectedShift.id, { isFlagged: false })}
                       className="w-full flex items-center justify-between p-4 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition-colors group"

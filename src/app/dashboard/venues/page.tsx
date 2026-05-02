@@ -25,6 +25,20 @@ type Venue = {
   parkingInfo: string;
 };
 
+const DEFAULT_DEPARTMENTS: Department[] = [
+  { name: "Front of House", active: true },
+  { name: "Back of House", active: true },
+  { name: "Security", active: true },
+];
+
+const normalizeVenue = (venue: any): Venue => ({
+  ...venue,
+  departments: Array.isArray(venue?.departments) ? venue.departments : DEFAULT_DEPARTMENTS,
+  instructions: typeof venue?.instructions === "string" ? venue.instructions : "",
+  dressCode: typeof venue?.dressCode === "string" ? venue.dressCode : "",
+  parkingInfo: typeof venue?.parkingInfo === "string" ? venue.parkingInfo : "",
+});
+
 // Mock Data
 const INITIAL_VENUES: Venue[] = [];
 
@@ -37,14 +51,20 @@ export default function VenuesPage() {
   
   // Edit Modes
   const [editingNotes, setEditingNotes] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
   const [tempInstructions, setTempInstructions] = useState("");
   const [tempDressCode, setTempDressCode] = useState("");
   const [tempParking, setTempParking] = useState("");
+  const [tempAddress, setTempAddress] = useState("");
+  const [tempGps, setTempGps] = useState("");
+  const [newDeptName, setNewDeptName] = useState("");
+  const [panelError, setPanelError] = useState<string | null>(null);
 
   // Add Venue State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [newVenueData, setNewVenueData] = useState({
     name: "", clientId: "", address: "", gps: "", instructions: "", dressCode: "", parkingInfo: ""
   });
@@ -54,9 +74,18 @@ export default function VenuesPage() {
   };
 
   useEffect(() => {
-    fetch('/api/venues').then(res => res.json()).then(data => setVenues(Array.isArray(data) ? data : []));
+    fetch('/api/me').then(res => res.ok ? res.json() : null).then(data => setCurrentUser(data)).catch(() => setCurrentUser(null));
+    fetch('/api/venues')
+      .then(res => res.json())
+      .then(data => setVenues(Array.isArray(data) ? data.map(normalizeVenue) : []));
     fetch('/api/clients').then(res => res.json()).then(data => setClients(Array.isArray(data) ? data : []));
   }, []);
+  const isClientUser = currentUser?.role === "user";
+  useEffect(() => {
+    if (isClientUser && clients.length > 0 && !newVenueData.clientId) {
+      setNewVenueData((prev) => ({ ...prev, clientId: clients[0].id }));
+    }
+  }, [isClientUser, clients, newVenueData.clientId]);
 
   // Derived State
   const filteredVenues = useMemo(() => {
@@ -98,6 +127,7 @@ export default function VenuesPage() {
     if (!venue) return;
     const updatedDepts = venue.departments.map(d => d.name === deptName ? { ...d, active: !d.active } : d);
     try {
+      setPanelError(null);
       const res = await fetch('/api/venues', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -105,8 +135,13 @@ export default function VenuesPage() {
       });
       if (res.ok) {
         setVenues(venues.map(v => v.id === venueId ? { ...v, departments: updatedDepts } : v));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setPanelError(err.error || "Failed to update department.");
       }
-    } catch (e) {}
+    } catch (e) {
+      setPanelError("Failed to update department.");
+    }
   };
 
   const startEditingNotes = () => {
@@ -115,6 +150,74 @@ export default function VenuesPage() {
     setTempDressCode(selectedVenue.dressCode);
     setTempParking(selectedVenue.parkingInfo);
     setEditingNotes(true);
+  };
+
+  const startEditingLocation = () => {
+    if (!selectedVenue) return;
+    setTempAddress(selectedVenue.address || "");
+    setTempGps(selectedVenue.gps || "");
+    setPanelError(null);
+    setEditingLocation(true);
+  };
+
+  const saveLocation = async () => {
+    if (!selectedVenue) return;
+    if (!tempAddress.trim()) {
+      setPanelError("Street address is required.");
+      return;
+    }
+    const updates = {
+      address: tempAddress.trim(),
+      gps: tempGps.trim(),
+    };
+    try {
+      setPanelError(null);
+      const res = await fetch('/api/venues', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...selectedVenue, ...updates })
+      });
+      if (res.ok) {
+        setVenues(venues.map(v => v.id === selectedVenue.id ? { ...v, ...updates } : v));
+        setEditingLocation(false);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setPanelError(err.error || "Failed to save location.");
+      }
+    } catch {
+      setPanelError("Failed to save location.");
+    }
+  };
+
+  const addDepartment = async () => {
+    if (!selectedVenue) return;
+    const nextName = newDeptName.trim();
+    if (!nextName) return;
+    const exists = (selectedVenue.departments || DEFAULT_DEPARTMENTS).some(
+      (d) => d.name.toLowerCase() === nextName.toLowerCase()
+    );
+    if (exists) {
+      setPanelError("Department already exists.");
+      return;
+    }
+    const updatedDepts = [...(selectedVenue.departments || DEFAULT_DEPARTMENTS), { name: nextName, active: true }];
+    try {
+      setPanelError(null);
+      const res = await fetch('/api/venues', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ ...selectedVenue, departments: updatedDepts })
+      });
+      if (res.ok) {
+        setVenues(venues.map(v => v.id === selectedVenue.id ? { ...v, departments: updatedDepts } : v));
+        setNewDeptName("");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setPanelError(err.error || "Failed to add department.");
+      }
+    } catch {
+      setPanelError("Failed to add department.");
+    }
   };
 
   const saveNotes = async () => {
@@ -158,7 +261,7 @@ export default function VenuesPage() {
       });
       if (res.ok) {
         const added = await res.json();
-        setVenues([...venues, added]);
+        setVenues([...venues, normalizeVenue(added)]);
         setIsAddModalOpen(false);
         setNewVenueData({ name: "", clientId: "", address: "", gps: "", instructions: "", dressCode: "", parkingInfo: "" });
       }
@@ -171,7 +274,7 @@ export default function VenuesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Venue Management</h1>
-          <p className="text-foreground/70 mt-1">Manage physical locations, instructions, and department availability.</p>
+          <p className="text-foreground/70 mt-1">{isClientUser ? "Manage your venues, setup notes, and department availability." : "Manage physical locations, instructions, and department availability."}</p>
         </div>
         <button 
           onClick={() => setIsAddModalOpen(true)}
@@ -213,7 +316,7 @@ export default function VenuesPage() {
             <thead className="bg-secondary/30 text-foreground/70 border-b border-secondary/50">
               <tr>
                 <th className="px-6 py-4 font-medium">Venue Details</th>
-                <th className="px-6 py-4 font-medium">Associated Client</th>
+                {!isClientUser && <th className="px-6 py-4 font-medium">Associated Client</th>}
                 <th className="px-6 py-4 font-medium">Location</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
@@ -240,10 +343,10 @@ export default function VenuesPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  {!isClientUser && <td className="px-6 py-4">
                     <p className="font-medium text-foreground/80">{venue.clientName}</p>
                     <p className="text-xs text-foreground/40 font-mono">{venue.clientId}</p>
-                  </td>
+                  </td>}
                   <td className="px-6 py-4">
                     <p className="text-sm w-48 truncate" title={venue.address}>{venue.address}</p>
                     <p className="text-xs text-foreground/50 font-mono mt-0.5">{venue.gps}</p>
@@ -262,7 +365,7 @@ export default function VenuesPage() {
               ))}
               {filteredVenues.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-foreground/50">
+                  <td colSpan={isClientUser ? 4 : 5} className="px-6 py-12 text-center text-foreground/50">
                     No venues found matching your criteria.
                   </td>
                 </tr>
@@ -327,20 +430,44 @@ export default function VenuesPage() {
                     <h3 className="font-bold text-lg flex items-center gap-2">
                       <Map className="w-5 h-5 text-primary" /> Location Configuration
                     </h3>
-                    <button className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
-                      Edit <Edit3 className="w-3 h-3"/>
-                    </button>
+                    {!editingLocation ? (
+                      <button onClick={startEditingLocation} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                        Edit <Edit3 className="w-3 h-3"/>
+                      </button>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingLocation(false)} className="text-xs font-bold text-foreground/60 hover:underline">Cancel</button>
+                        <button onClick={saveLocation} className="text-xs font-bold text-emerald-600 hover:underline">Save</button>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-secondary/10 border border-secondary/50 rounded-xl">
                       <p className="text-xs font-bold text-foreground/50 mb-1">STREET ADDRESS</p>
-                      <p className="text-sm font-medium">{selectedVenue.address}</p>
+                      {editingLocation ? (
+                        <input
+                          value={tempAddress}
+                          onChange={(e) => setTempAddress(e.target.value)}
+                          className="w-full px-3 py-2 bg-background border border-primary rounded-lg text-sm focus:outline-none"
+                        />
+                      ) : (
+                        <p className="text-sm font-medium">{selectedVenue.address}</p>
+                      )}
                     </div>
                     <div className="p-4 bg-secondary/10 border border-secondary/50 rounded-xl flex justify-between items-center">
                       <div>
                         <p className="text-xs font-bold text-foreground/50 mb-1">GPS COORDINATES</p>
-                        <p className="text-sm font-mono">{selectedVenue.gps}</p>
+                        {editingLocation ? (
+                          <input
+                            value={tempGps}
+                            onChange={(e) => setTempGps(e.target.value)}
+                            placeholder="43.64, -79.39"
+                            className="w-full px-3 py-2 bg-background border border-primary rounded-lg text-sm focus:outline-none"
+                          />
+                        ) : (
+                          <p className="text-sm font-mono">{selectedVenue.gps || "Not set"}</p>
+                        )}
                       </div>
                       <Navigation className="w-5 h-5 text-primary opacity-50" />
                     </div>
@@ -355,7 +482,7 @@ export default function VenuesPage() {
                   <p className="text-sm text-foreground/70 mb-4">Toggle which departments can have shifts posted at this venue.</p>
                   
                   <div className="flex flex-wrap gap-3">
-                    {selectedVenue.departments.map(dept => (
+                    {(selectedVenue.departments || DEFAULT_DEPARTMENTS).map(dept => (
                       <button 
                         key={dept.name}
                         onClick={() => toggleDepartment(selectedVenue.id, dept.name)}
@@ -366,7 +493,19 @@ export default function VenuesPage() {
                         {dept.name} {dept.active && "✓"}
                       </button>
                     ))}
-                    <button className="px-4 py-2 rounded-lg text-sm font-bold border border-dashed border-secondary text-foreground/50 hover:bg-secondary/30 transition-all">
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <input
+                      type="text"
+                      value={newDeptName}
+                      onChange={(e) => setNewDeptName(e.target.value)}
+                      placeholder="Add new department"
+                      className="flex-1 px-3 py-2 bg-background border border-secondary rounded-lg text-sm focus:outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={addDepartment}
+                      className="px-4 py-2 rounded-lg text-sm font-bold border border-primary text-primary hover:bg-primary/10 transition-all"
+                    >
                       + Add Dept
                     </button>
                   </div>
@@ -440,6 +579,11 @@ export default function VenuesPage() {
                     </div>
                   )}
                 </div>
+                {panelError && (
+                  <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-bold">
+                    {panelError}
+                  </div>
+                )}
 
               </div>
             </motion.div>
@@ -464,10 +608,11 @@ export default function VenuesPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-foreground/70">ASSOCIATED CLIENT</label>
-                  <select required value={newVenueData.clientId} onChange={e => setNewVenueData({...newVenueData, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors">
+                  <select required disabled={isClientUser} value={newVenueData.clientId} onChange={e => setNewVenueData({...newVenueData, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors disabled:opacity-60">
                     <option value="">Select a Client...</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
+                  {isClientUser && <p className="text-[11px] text-foreground/50">Locked to your client account.</p>}
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-foreground/70">STREET ADDRESS</label>

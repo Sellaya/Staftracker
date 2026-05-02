@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { BrainCircuit, Sliders, Zap, History, Settings2 } from "lucide-react";
 
 export default function AIEnginePage() {
+  const recentAssignments: { shift: string; match: string; time: string }[] = [];
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
@@ -130,10 +132,7 @@ export default function AIEnginePage() {
               <History className="w-4 h-4" /> Recent AI Assignments
             </h3>
             <div className="space-y-3">
-              {[
-                { shift: "Server @ The Rustic Table", match: "Olivia Martin", time: "2m ago" },
-                { shift: "Chef @ Downtown Events", match: "Jackson Lee", time: "15m ago" },
-              ].map((log, i) => (
+              {recentAssignments.map((log, i) => (
                 <div key={i} className="text-sm border-b border-secondary/30 pb-2 last:border-0 last:pb-0">
                   <p className="font-medium truncate">{log.shift}</p>
                   <div className="flex justify-between text-xs text-foreground/50 mt-1">
@@ -142,6 +141,9 @@ export default function AIEnginePage() {
                   </div>
                 </div>
               ))}
+              {recentAssignments.length === 0 && (
+                <p className="text-sm text-foreground/50">No assignment history yet.</p>
+              )}
             </div>
           </motion.div>
         </div>

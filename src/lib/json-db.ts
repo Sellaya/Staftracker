@@ -37,21 +37,26 @@ export async function withFileLock<T>(filePath: string, operation: () => Promise
   }
 }
 
-export function generateId(prefix: string): string {
-  return `${prefix}-${crypto.randomUUID()}`;
+function parseNumericId(id: string, prefix: string): number | null {
+  const match = String(id).match(new RegExp(`^${prefix}-(\\d{4})$`));
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+export function generateId(prefix: string, existingIds: string[] = []): string {
+  const numericIds = existingIds
+    .map((id) => parseNumericId(id, prefix))
+    .filter((n): n is number => typeof n === "number");
+  const used = new Set(numericIds);
+
+  for (let numeric = 1; numeric <= 9999; numeric += 1) {
+    if (!used.has(numeric)) {
+      return `${prefix}-${String(numeric).padStart(4, "0")}`;
+    }
+  }
+  throw new Error(`No available 4-digit ${prefix} IDs remaining`);
 }
 
 export function generateWorkerId(existingIds: string[]): string {
-  const existing = new Set(existingIds);
-  for (let i = 0; i < 100; i += 1) {
-    const candidate = `W-${Math.floor(1000 + Math.random() * 9000)}`;
-    if (!existing.has(candidate)) return candidate;
-  }
-
-  for (let numeric = 1000; numeric <= 9999; numeric += 1) {
-    const candidate = `W-${numeric}`;
-    if (!existing.has(candidate)) return candidate;
-  }
-
-  throw new Error("No available 4-digit worker IDs remaining");
+  return generateId("W", existingIds);
 }

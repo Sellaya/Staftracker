@@ -33,7 +33,7 @@ export default function WorkerSignup() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   
-  // File mock states
+  // File upload state
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
   const [extraDocFileName, setExtraDocFileName] = useState<string | null>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);

@@ -25,6 +25,9 @@ export default function LandingPage() {
           <Link href="/login/worker" className="px-6 py-2.5 rounded-full border border-primary/50 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
             Worker Login
           </Link>
+          <Link href="/login/client" className="px-6 py-2.5 rounded-full border border-accent/50 text-accent text-sm font-bold hover:bg-accent/10 transition-colors">
+            Client Login
+          </Link>
           <Link href="/login/admin" className="px-6 py-2.5 rounded-full border border-secondary text-sm font-bold hover:bg-secondary/50 transition-colors">
             Admin Login
           </Link>
@@ -93,9 +96,14 @@ export default function LandingPage() {
                 <p className="text-foreground/70 mb-8 flex-1">
                   Instantly access Toronto's largest pool of verified, pre-screened hospitality professionals.
                 </p>
-                <Link href="/signup/client" className="flex items-center justify-between w-full px-6 py-4 bg-secondary text-foreground rounded-2xl font-bold hover:bg-secondary/80 transition-all border border-secondary/50 hover:border-accent">
-                  Register Venue <ArrowRight className="w-5 h-5" />
-                </Link>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Link href="/signup/client" className="flex items-center justify-between w-full px-6 py-4 bg-secondary text-foreground rounded-2xl font-bold hover:bg-secondary/80 transition-all border border-secondary/50 hover:border-accent">
+                    Register Venue <ArrowRight className="w-5 h-5" />
+                  </Link>
+                  <Link href="/login/client" className="flex items-center justify-between w-full px-6 py-4 bg-accent/10 text-accent rounded-2xl font-bold transition-all border border-accent/40 hover:bg-accent/20">
+                    Client Login <ArrowRight className="w-5 h-5" />
+                  </Link>
+                </div>
               </div>
             </motion.div>
 

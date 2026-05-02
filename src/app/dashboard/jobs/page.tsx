@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Briefcase, Search, Plus, MapPin, CalendarDays, Clock, 
   DollarSign, AlertCircle, X, Users, CheckCircle2, Edit3, Check, Navigation, Shirt, Car,
-  ChevronLeft, ChevronRight, XCircle
+  ChevronLeft, ChevronRight, XCircle, UserCheck, Ban
 } from "lucide-react";
+import { scoreWorkerForJob } from "@/lib/jobs-shared";
 
 // Types
 type JobStatus = "Open" | "Filled" | "Cancelled";
@@ -16,6 +17,8 @@ type Applicant = {
   name: string;
   reliability: number;
   appliedAt: string;
+  status?: string;
+  rejectionReason?: string;
 };
 
 type JobPost = {
@@ -37,7 +40,43 @@ type JobPost = {
   applicants: Applicant[];
   assignedWorkerId: string | null;
   assignedWorkerName: string | null;
+  headcount?: number;
+  venueId?: string;
 };
+
+function applicantStatusBadge(status?: string): { label: string; className: string } {
+  const s = status || "pending_admin";
+  switch (s) {
+    case "pending_admin":
+      return { label: "Pending review", className: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
+    case "confirmed":
+      return { label: "Confirmed", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" };
+    case "rejected":
+      return { label: "Rejected", className: "bg-red-500/10 text-red-600 border-red-500/30" };
+    case "withdrawn":
+      return { label: "Withdrawn", className: "bg-secondary text-foreground/50 border-secondary" };
+    default:
+      return { label: s, className: "bg-secondary text-foreground/60 border-secondary" };
+  }
+}
+
+function sortApplicantsForDisplay(a: Applicant, b: Applicant, jobRole: string, workers: unknown[]): number {
+  const rank = (s?: string) => {
+    const v = s || "pending_admin";
+    if (v === "pending_admin") return 0;
+    if (v === "confirmed") return 1;
+    if (v === "rejected") return 2;
+    if (v === "withdrawn") return 3;
+    return 4;
+  };
+  const ra = rank(a.status) - rank(b.status);
+  if (ra !== 0) return ra;
+  const wa = workers.find((w: any) => w.id === a.id) as Record<string, unknown> | undefined;
+  const wb = workers.find((w: any) => w.id === b.id) as Record<string, unknown> | undefined;
+  const sa = wa ? scoreWorkerForJob(wa, jobRole) : Number(a.reliability ?? 0);
+  const sb = wb ? scoreWorkerForJob(wb, jobRole) : Number(b.reliability ?? 0);
+  return sb - sa;
+}
 
 // Utilities for formatting
 const formatDate = (dateStr: string) => {
@@ -258,20 +297,30 @@ export default function JobsManagement() {
   const [clients, setClients] = useState<any[]>([]);
   const [venues, setVenues] = useState<any[]>([]);
   const [allWorkers, setAllWorkers] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState<JobStatus | "All">("All");
+  const [filter, setFilter] = useState<JobStatus | "All" | "PendingReview">("All");
+  const isClientUser = currentUser?.role === "user";
+  const canManageAssignments = currentUser?.role === "admin" || currentUser?.role === "super_admin";
 
   useEffect(() => {
-    fetch('/api/jobs').then(res => res.json()).then(data => setJobs(Array.isArray(data) ? data : []));
-    fetch('/api/clients').then(res => res.json()).then(data => setClients(Array.isArray(data) ? data : []));
-    fetch('/api/venues').then(res => res.json()).then(data => setVenues(Array.isArray(data) ? data : []));
-    fetch('/api/workers').then(res => res.json()).then(data => setAllWorkers(Array.isArray(data) ? data : []));
+    fetch('/api/me').then(res => res.ok ? res.json() : null).then(data => setCurrentUser(data)).catch(() => setCurrentUser(null));
+    fetch('/api/jobs').then(res => (res.ok ? res.json() : [])).then(data => setJobs(Array.isArray(data) ? data : []));
+    fetch('/api/clients').then(res => (res.ok ? res.json() : [])).then(data => setClients(Array.isArray(data) ? data : []));
+    fetch('/api/venues').then(res => (res.ok ? res.json() : [])).then(data => setVenues(Array.isArray(data) ? data : []));
+    fetch('/api/workers').then(res => (res.ok ? res.json() : [])).then(data => setAllWorkers(Array.isArray(data) ? data : []));
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.role === "user" && clients.length > 0) {
+      setCreateForm((prev) => (prev.clientId ? prev : { ...prev, clientId: clients[0].id }));
+    }
+  }, [currentUser, clients]);
 
   const getAuthHeaders = () => {
     return {};
   };
-  
+
   // Selection State
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   
@@ -279,11 +328,23 @@ export default function JobsManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<JobPost>>({});
   const [manualSearchResults, setManualSearchResults] = useState<any[]>([]);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
+  const [assignmentBusy, setAssignmentBusy] = useState(false);
+  const [rejectDraftApplicantId, setRejectDraftApplicantId] = useState<string | null>(null);
+  const [rejectDraftNote, setRejectDraftNote] = useState("");
 
   // Creation State
   const [isCreating, setIsCreating] = useState(false);
+  const [isSavingJob, setIsSavingJob] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+  const [showAddVenueInline, setShowAddVenueInline] = useState(false);
+  const [isCreatingVenueInline, setIsCreatingVenueInline] = useState(false);
+  const [venueInlineError, setVenueInlineError] = useState<string | null>(null);
+  const [newVenueInline, setNewVenueInline] = useState({ name: "", address: "", gps: "" });
   const [createForm, setCreateForm] = useState({
-    clientId: "", role: "", venueId: "", date: "", startTime: "", endTime: "", hourlyRate: 0, 
+    clientId: "", role: "", venueId: "", date: "", startTime: "", endTime: "", hourlyRate: 0,
+    headcount: 1,
     instructions: "", uniform: "", parking: "", isUrgent: false
   });
 
@@ -305,6 +366,16 @@ export default function JobsManagement() {
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
+  const suggestedWorkers = useMemo(() => {
+    if (!selectedJob || selectedJob.status !== "Open" || !canManageAssignments) return [];
+    return [...allWorkers]
+      .filter((w) => w.id && w.id !== selectedJob.assignedWorkerId)
+      .map((w) => ({ w, score: scoreWorkerForJob(w, selectedJob.role) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((x) => x.w);
+  }, [selectedJob, allWorkers, canManageAssignments]);
+
   const filteredJobs = jobs.filter(j => {
     const matchesSearch = j.role.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           j.venueName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -313,6 +384,13 @@ export default function JobsManagement() {
     if (!matchesSearch) return false;
     
     if (filter === "All") return true;
+    if (filter === "PendingReview") {
+      const apps = Array.isArray(j.applicants) ? j.applicants : [];
+      return (
+        j.status === "Open" &&
+        apps.some((a: any) => (a.status || "pending_admin") === "pending_admin")
+      );
+    }
     return j.status === filter;
   });
 
@@ -320,6 +398,10 @@ export default function JobsManagement() {
     setSelectedJobId(job.id);
     setIsEditing(false);
     setEditForm(job);
+    setAssignmentError(null);
+    setManualSearchResults([]);
+    setRejectDraftApplicantId(null);
+    setRejectDraftNote("");
   };
 
   const handleSaveEdit = async () => {
@@ -343,28 +425,44 @@ export default function JobsManagement() {
 
   const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError(null);
+    setCreateSuccess(null);
     const finalHours = calculateHours(createForm.startTime || "", createForm.endTime || "");
     
     // Simple validation
+    if (!createForm.clientId || !createForm.venueId || !createForm.role.trim()) {
+      setCreateError("Please choose client, venue, and role.");
+      return;
+    }
     if (!createForm.date || !createForm.startTime || !createForm.endTime) {
-      console.error("Please complete the date and time fields.");
+      setCreateError("Please complete date and time fields.");
+      return;
+    }
+    if (finalHours <= 0) {
+      setCreateError("Shift duration must be greater than 0.");
+      return;
+    }
+    if (Number(createForm.hourlyRate) < 15) {
+      setCreateError("Hourly rate must be at least $15.");
       return;
     }
 
     const client = clients.find(c => c.id === createForm.clientId);
     const venue = venues.find(v => v.id === createForm.venueId);
 
+    const hc = Math.max(1, Math.min(50, Math.floor(Number(createForm.headcount) || 1)));
     const newJob: Partial<JobPost> = {
-      id: `J-${Math.floor(Math.random() * 9000) + 1000}`,
       clientId: createForm.clientId,
       clientName: client?.name || "Unknown Client",
       role: createForm.role || "Unknown Role",
+      venueId: createForm.venueId,
       venueName: venue?.name || "Unknown Venue",
       date: createForm.date || "",
       startTime: createForm.startTime || "",
       endTime: createForm.endTime || "",
       hours: finalHours,
       hourlyRate: Number(createForm.hourlyRate) || 0,
+      headcount: hc,
       status: "Open",
       isUrgent: createForm.isUrgent || false,
       instructions: createForm.instructions || "",
@@ -376,6 +474,7 @@ export default function JobsManagement() {
     };
     
     try {
+      setIsSavingJob(true);
       const res = await fetch('/api/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -384,77 +483,168 @@ export default function JobsManagement() {
       if (res.ok) {
         const savedJob = await res.json();
         setJobs([savedJob, ...jobs]);
+        setCreateSuccess("Job posted successfully. Workers can now view and apply.");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setCreateError(err.error || "Failed to publish job.");
+        return;
       }
     } catch (e) {
-      setJobs([{ ...newJob } as JobPost, ...jobs]);
+      setCreateError("Failed to publish job.");
+      return;
+    } finally {
+      setIsSavingJob(false);
     }
 
     setIsCreating(false);
+    setShowAddVenueInline(false);
+    setNewVenueInline({ name: "", address: "", gps: "" });
     setCreateForm({
-      clientId: "", role: "", venueId: "", date: "", startTime: "", endTime: "", hourlyRate: 0, 
+      clientId: "", role: "", venueId: "", date: "", startTime: "", endTime: "", hourlyRate: 0,
+      headcount: 1,
       instructions: "", uniform: "", parking: "", isUrgent: false
     });
   };
 
-  const handleAssignWorker = async (worker: any) => {
-    if (!selectedJobId) return;
-    
-    const targetJob = jobs.find(j => j.id === selectedJobId);
-    if (targetJob) {
-      const updated = { ...targetJob, status: "Filled" as JobStatus, assignedWorkerId: worker.id, assignedWorkerName: worker.name };
-      try {
-        // 1. Update Job Status
-        await fetch('/api/jobs', { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, 
-          body: JSON.stringify(updated) 
-        });
+  const handleCreateVenueInline = async () => {
+    setVenueInlineError(null);
+    if (!createForm.clientId) {
+      setVenueInlineError("Select a client first.");
+      return;
+    }
+    if (!newVenueInline.name.trim() || !newVenueInline.address.trim()) {
+      setVenueInlineError("Venue name and address are required.");
+      return;
+    }
+    try {
+      setIsCreatingVenueInline(true);
+      const client = clients.find((c) => c.id === createForm.clientId);
+      const payload = {
+        name: newVenueInline.name.trim(),
+        clientId: createForm.clientId,
+        clientName: client?.name || "",
+        address: newVenueInline.address.trim(),
+        gps: newVenueInline.gps.trim(),
+        status: "Active",
+        departments: [
+          { name: "Front of House", active: true },
+          { name: "Back of House", active: true },
+          { name: "Security", active: true }
+        ],
+        instructions: "",
+        dressCode: "",
+        parkingInfo: ""
+      };
+      const res = await fetch('/api/venues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setVenueInlineError(err.error || "Failed to create venue.");
+        return;
+      }
+      const created = await res.json();
+      setVenues((prev) => [...prev, created]);
+      setCreateForm((prev) => ({ ...prev, venueId: created.id }));
+      setShowAddVenueInline(false);
+      setNewVenueInline({ name: "", address: "", gps: "" });
+    } finally {
+      setIsCreatingVenueInline(false);
+    }
+  };
 
-        // 2. Create Shift Record
-        const shiftData = {
-          jobId: targetJob.id,
+  const handleAssignWorker = async (worker: { id: string; name: string }) => {
+    if (!selectedJobId || !canManageAssignments) return;
+    setAssignmentError(null);
+    const targetJob = jobs.find((j) => j.id === selectedJobId);
+    if (!targetJob || targetJob.status !== "Open") return;
+
+    const st = (id: string) =>
+      targetJob.applicants?.find((a) => a.id === id)?.status || "pending_admin";
+    const isPendingApplicant = st(worker.id) === "pending_admin";
+
+    try {
+      setAssignmentBusy(true);
+      const res = await fetch("/api/jobs/assignment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: isPendingApplicant ? "confirm_applicant" : "admin_direct_assign",
+          jobId: selectedJobId,
           workerId: worker.id,
           workerName: worker.name,
-          venueName: targetJob.venueName,
-          role: targetJob.role,
-          date: targetJob.date,
-          scheduledStart: targetJob.startTime,
-          scheduledEnd: targetJob.endTime,
-          hours: targetJob.hours,
-          rate: targetJob.hourlyRate,
-          status: "Upcoming"
-        };
-        await fetch('/api/shifts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-          body: JSON.stringify(shiftData)
-        });
-
-        // 3. Update Local UI
-        setJobs(jobs.map(j => j.id === selectedJobId ? updated as JobPost : j));
-      } catch (e) {
-        console.error("Assignment failed", e);
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAssignmentError(typeof data.error === "string" ? data.error : `Assignment failed (${res.status})`);
+        return;
       }
+      const updated = data as JobPost;
+      setJobs((prev) => prev.map((j) => (j.id === updated.id ? { ...j, ...updated } : j)));
+      setManualSearchResults([]);
+    } catch {
+      setAssignmentError("Could not reach the server. Try again.");
+    } finally {
+      setAssignmentBusy(false);
+    }
+  };
+
+  const handleRejectApplicant = async (workerId: string, rejectReason?: string) => {
+    if (!selectedJobId || !canManageAssignments) return;
+    setAssignmentError(null);
+    try {
+      setAssignmentBusy(true);
+      const res = await fetch("/api/jobs/assignment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reject_applicant",
+          jobId: selectedJobId,
+          workerId,
+          rejectReason: rejectReason || "Not selected for this shift",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAssignmentError(typeof data.error === "string" ? data.error : "Reject failed");
+        return;
+      }
+      const updated = data as JobPost;
+      setJobs((prev) => prev.map((j) => (j.id === updated.id ? { ...j, ...updated } : j)));
+      setRejectDraftApplicantId(null);
+      setRejectDraftNote("");
+    } catch {
+      setAssignmentError("Could not reach the server. Try again.");
+    } finally {
+      setAssignmentBusy(false);
     }
   };
 
   const handleUnassignWorker = async () => {
-    if (!selectedJobId) return;
-    
-    const targetJob = jobs.find(j => j.id === selectedJobId);
-    if (targetJob) {
-      const updated = { ...targetJob, status: "Open" as JobStatus, assignedWorkerId: null, assignedWorkerName: null };
-      try {
-        await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(updated) });
-      } catch (e) {}
-    }
-
-    setJobs(jobs.map(j => {
-      if (j.id === selectedJobId) {
-        return { ...j, status: "Open" as JobStatus, assignedWorkerId: null, assignedWorkerName: null };
+    if (!selectedJobId || !canManageAssignments) return;
+    setAssignmentError(null);
+    try {
+      setAssignmentBusy(true);
+      const res = await fetch("/api/jobs/assignment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "unassign", jobId: selectedJobId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAssignmentError(typeof data.error === "string" ? data.error : "Unassign failed");
+        return;
       }
-      return j;
-    }));
+      const updated = data as JobPost;
+      setJobs((prev) => prev.map((j) => (j.id === updated.id ? { ...j, ...updated } : j)));
+    } catch {
+      setAssignmentError("Could not reach the server. Try again.");
+    } finally {
+      setAssignmentBusy(false);
+    }
   };
 
   const handleCancelJob = async () => {
@@ -470,6 +660,8 @@ export default function JobsManagement() {
 
     setJobs(jobs.map(j => j.id === selectedJobId ? { ...j, status: "Cancelled" as JobStatus } : j));
     setSelectedJobId(null);
+    setRejectDraftApplicantId(null);
+    setRejectDraftNote("");
   };
 
   return (
@@ -477,7 +669,7 @@ export default function JobsManagement() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Job Management</h1>
-          <p className="text-foreground/70 mt-1">Create shifts, edit operational details, and assign workers.</p>
+          <p className="text-foreground/70 mt-1">{isClientUser ? "Create jobs for your venues and track applicants." : "Create shifts, edit operational details, and assign workers."}</p>
         </div>
         <button 
           onClick={() => setIsCreating(true)}
@@ -500,7 +692,7 @@ export default function JobsManagement() {
             />
           </div>
           <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-            {(["All", "Open", "Filled", "Cancelled"] as const).map(f => (
+            {(["All", "Open", "PendingReview", "Filled", "Cancelled"] as const).map(f => (
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
@@ -508,7 +700,7 @@ export default function JobsManagement() {
                   filter === f ? "bg-primary text-primary-foreground" : "border border-secondary hover:bg-secondary/50"
                 }`}
               >
-                {f}
+                {f === "PendingReview" ? "Pending review" : f}
               </button>
             ))}
           </div>
@@ -559,7 +751,11 @@ export default function JobsManagement() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-foreground/50" />
-                      <span className="font-bold">{job.applicants.length}</span>
+                      <span className="font-bold">
+                        {(Array.isArray(job.applicants) ? job.applicants : []).filter(
+                          (a: any) => (a.status || "pending_admin") !== "withdrawn"
+                        ).length}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -611,14 +807,24 @@ export default function JobsManagement() {
                 </button>
               </div>
               <form onSubmit={handleCreateJob} className="p-6 overflow-y-auto space-y-6">
-                
+                {createError && (
+                  <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-bold">
+                    {createError}
+                  </div>
+                )}
+                {createSuccess && (
+                  <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 text-sm font-bold">
+                    {createSuccess}
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-foreground/70 mb-1">ASSOCIATED CLIENT</label>
-                    <select required value={createForm.clientId} onChange={e => setCreateForm({...createForm, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors">
+                    <select required disabled={isClientUser} value={createForm.clientId} onChange={e => setCreateForm({...createForm, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors disabled:opacity-60">
                       <option value="">Select Client...</option>
                       {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
+                    {isClientUser && <p className="mt-1 text-[11px] text-foreground/50">Locked to your client account.</p>}
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-foreground/70 mb-1">VENUE / LOCATION</label>
@@ -626,12 +832,63 @@ export default function JobsManagement() {
                       <option value="">Select Venue...</option>
                       {venues.filter(v => !createForm.clientId || v.clientId === createForm.clientId).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                     </select>
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddVenueInline((s) => !s)}
+                        className="text-xs font-bold text-primary hover:underline"
+                      >
+                        {showAddVenueInline ? "Cancel new venue" : "+ Add new venue for this job"}
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-foreground/70 mb-1">ROLE / TITLE</label>
                     <input required type="text" value={createForm.role} onChange={e => setCreateForm({...createForm, role: e.target.value})} placeholder="e.g. Lead Bartender" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                   </div>
                 </div>
+
+                {showAddVenueInline && (
+                  <div className="p-4 rounded-2xl border border-primary/20 bg-primary/5 space-y-3">
+                    <p className="text-sm font-bold text-primary">Create New Venue</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        value={newVenueInline.name}
+                        onChange={(e) => setNewVenueInline((prev) => ({ ...prev, name: e.target.value }))}
+                        placeholder="Venue name"
+                        className="px-3 py-2.5 bg-background border border-secondary rounded-xl focus:outline-none focus:border-primary"
+                      />
+                      <input
+                        type="text"
+                        value={newVenueInline.gps}
+                        onChange={(e) => setNewVenueInline((prev) => ({ ...prev, gps: e.target.value }))}
+                        placeholder="GPS (optional)"
+                        className="px-3 py-2.5 bg-background border border-secondary rounded-xl focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={newVenueInline.address}
+                      onChange={(e) => setNewVenueInline((prev) => ({ ...prev, address: e.target.value }))}
+                      placeholder="Venue address"
+                      className="w-full px-3 py-2.5 bg-background border border-secondary rounded-xl focus:outline-none focus:border-primary"
+                    />
+                    {venueInlineError && (
+                      <div className="text-xs font-bold text-red-600">{venueInlineError}</div>
+                    )}
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={isCreatingVenueInline}
+                        onClick={handleCreateVenueInline}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-sm disabled:opacity-60"
+                      >
+                        {isCreatingVenueInline ? "Adding..." : "Save Venue"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <CustomDatePicker 
@@ -653,7 +910,7 @@ export default function JobsManagement() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-foreground/70 mb-1">HOURLY RATE ($)</label>
                     <div className="relative flex items-center bg-secondary/10 border border-secondary rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all group">
@@ -670,7 +927,25 @@ export default function JobsManagement() {
                       />
                     </div>
                   </div>
-                  <div className="flex items-center mt-6">
+                  <div>
+                    <label className="block text-xs font-bold text-foreground/70 mb-1">WORKERS NEEDED</label>
+                    <input
+                      required
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={createForm.headcount}
+                      onChange={(e) =>
+                        setCreateForm({
+                          ...createForm,
+                          headcount: Math.max(1, Math.min(50, Math.floor(Number(e.target.value)) || 1)),
+                        })
+                      }
+                      className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary font-bold text-sm"
+                    />
+                    <p className="text-[10px] text-foreground/50 mt-1">MVP: first slot uses assignment flow; headcount stored for ops.</p>
+                  </div>
+                  <div className="flex items-center md:mt-6">
                     <label className="flex items-center justify-center gap-3 cursor-pointer p-2.5 border border-amber-500/30 bg-amber-500/5 rounded-xl w-full hover:bg-amber-500/10 transition-colors">
                       <input type="checkbox" checked={createForm.isUrgent} onChange={e => setCreateForm({...createForm, isUrgent: e.target.checked})} className="w-5 h-5 rounded text-primary focus:ring-primary accent-primary" />
                       <span className="font-bold text-amber-500 text-sm uppercase tracking-wider">Mark as Urgent Job</span>
@@ -702,7 +977,7 @@ export default function JobsManagement() {
                     Cancel
                   </button>
                   <button type="submit" className="px-8 py-2.5 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-                    Publish Job Post
+                    {isSavingJob ? "Publishing..." : "Publish Job Post"}
                   </button>
                 </div>
               </form>
@@ -719,7 +994,7 @@ export default function JobsManagement() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => { setSelectedJobId(null); setIsEditing(false); }}
+              onClick={() => { setSelectedJobId(null); setIsEditing(false); setAssignmentError(null); setManualSearchResults([]); setRejectDraftApplicantId(null); setRejectDraftNote(""); }}
               className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
             />
             <motion.div 
@@ -778,7 +1053,7 @@ export default function JobsManagement() {
                       {isEditing ? <><Check className="w-4 h-4" /> Save Details</> : <><Edit3 className="w-4 h-4" /> Edit Job</>}
                     </button>
                   )}
-                  <button onClick={() => { setSelectedJobId(null); setIsEditing(false); }} className="p-2 hover:bg-secondary rounded-full transition-colors ml-1">
+                  <button onClick={() => { setSelectedJobId(null); setIsEditing(false); setAssignmentError(null); setManualSearchResults([]); setRejectDraftApplicantId(null); setRejectDraftNote(""); }} className="p-2 hover:bg-secondary rounded-full transition-colors ml-1">
                     <X className="w-6 h-6" />
                   </button>
                 </div>
@@ -905,6 +1180,12 @@ export default function JobsManagement() {
                 {/* Assignment / Applicants */}
                 {!isEditing && (
                   <div className="border-t border-secondary pt-8">
+                    {assignmentError && (
+                      <div className="mb-4 p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-medium flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <span>{assignmentError}</span>
+                      </div>
+                    )}
                     {selectedJob.status === "Filled" ? (
                       <div>
                         <h4 className="text-sm font-bold text-emerald-500 mb-4 flex items-center gap-2">
@@ -920,17 +1201,21 @@ export default function JobsManagement() {
                               <p className="text-xs text-foreground/50">{selectedJob.assignedWorkerId}</p>
                             </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={handleUnassignWorker}
-                              className="px-4 py-2 border border-red-500/30 text-red-500 bg-red-500/10 text-xs font-bold rounded-lg hover:bg-red-500/20 transition-colors"
-                            >
-                              Unassign
-                            </button>
-                            <button className="px-4 py-2 border border-secondary text-xs font-bold rounded-lg hover:bg-secondary/50 transition-colors">
-                              View Profile
-                            </button>
-                          </div>
+                          {canManageAssignments && (
+                            <div className="flex gap-2">
+                              <button 
+                                type="button"
+                                onClick={handleUnassignWorker}
+                                disabled={assignmentBusy}
+                                className="px-4 py-2 border border-red-500/30 text-red-500 bg-red-500/10 text-xs font-bold rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                              >
+                                Unassign
+                              </button>
+                              <button type="button" className="px-4 py-2 border border-secondary text-xs font-bold rounded-lg hover:bg-secondary/50 transition-colors">
+                                View Profile
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ) : selectedJob.status === "Cancelled" ? (
@@ -948,83 +1233,231 @@ export default function JobsManagement() {
                         {selectedJob.applicants.length > 0 && (
                           <div className="space-y-3 mb-8">
                             <h5 className="text-xs font-bold text-foreground/50 mb-3 uppercase tracking-widest">Applicants</h5>
-                            {selectedJob.applicants.map(applicant => (
-                              <div key={applicant.id} className="p-4 border border-secondary bg-background rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                                    {applicant.name.charAt(0)}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold group-hover:text-primary transition-colors cursor-pointer">{applicant.name}</p>
-                                    <div className="text-xs mt-0.5 text-foreground/70">
-                                      Reliability: {applicant.reliability}%
+                            {[...selectedJob.applicants]
+                              .sort((a, b) =>
+                                sortApplicantsForDisplay(a, b, selectedJob.role || "", allWorkers)
+                              )
+                              .map((applicant) => {
+                              const st = applicant.status || "pending_admin";
+                              const badge = applicantStatusBadge(applicant.status);
+                              const isPending = st === "pending_admin";
+                              return (
+                                <div key={applicant.id} className="p-4 border border-secondary bg-background rounded-xl flex flex-col gap-3 group">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0">
+                                        {applicant.name.charAt(0)}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <p className="font-bold truncate group-hover:text-primary transition-colors">{applicant.name}</p>
+                                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border shrink-0 ${badge.className}`}>
+                                            {badge.label}
+                                          </span>
+                                        </div>
+                                        <div className="text-xs mt-0.5 text-foreground/70">
+                                          Reliability: {applicant.reliability}% · Applied {applicant.appliedAt ? new Date(applicant.appliedAt).toLocaleString() : "—"}
+                                        </div>
+                                        {applicant.rejectionReason && st === "rejected" && (
+                                          <p className="text-xs text-red-600/90 mt-1">{applicant.rejectionReason}</p>
+                                        )}
+                                      </div>
                                     </div>
+                                    {canManageAssignments && (
+                                      <div className="flex flex-wrap gap-2 justify-end">
+                                        {isPending && (
+                                          <>
+                                            <button
+                                              type="button"
+                                              disabled={assignmentBusy}
+                                              onClick={() => handleAssignWorker({ id: applicant.id, name: applicant.name })}
+                                              className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                                            >
+                                              Confirm
+                                            </button>
+                                            {rejectDraftApplicantId === applicant.id ? (
+                                              <div className="w-full sm:w-auto flex flex-col gap-2 min-w-[12rem]">
+                                                <input
+                                                  type="text"
+                                                  value={rejectDraftNote}
+                                                  onChange={(e) => setRejectDraftNote(e.target.value)}
+                                                  placeholder="Optional note to applicant…"
+                                                  className="w-full px-3 py-2 text-xs border border-secondary rounded-lg bg-background focus:outline-none focus:border-primary"
+                                                />
+                                                <div className="flex gap-2 flex-wrap justify-end">
+                                                  <button
+                                                    type="button"
+                                                    disabled={assignmentBusy}
+                                                    onClick={() => {
+                                                      setRejectDraftApplicantId(null);
+                                                      setRejectDraftNote("");
+                                                    }}
+                                                    className="px-3 py-2 border border-secondary text-xs font-bold rounded-lg hover:bg-secondary/30"
+                                                  >
+                                                    Cancel
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    disabled={assignmentBusy}
+                                                    onClick={() =>
+                                                      handleRejectApplicant(
+                                                        applicant.id,
+                                                        rejectDraftNote.trim() || undefined
+                                                      )
+                                                    }
+                                                    className="px-3 py-2 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 disabled:opacity-50"
+                                                  >
+                                                    Confirm reject
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <button
+                                                type="button"
+                                                disabled={assignmentBusy}
+                                                onClick={() => {
+                                                  setRejectDraftApplicantId(applicant.id);
+                                                  setRejectDraftNote("");
+                                                }}
+                                                className="px-4 py-2 border border-red-500/40 text-red-600 bg-red-500/5 text-xs font-bold rounded-xl hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                              >
+                                                Reject
+                                              </button>
+                                            )}
+                                          </>
+                                        )}
+                                        {(st === "rejected" || st === "withdrawn") && (
+                                          <button
+                                            type="button"
+                                            disabled={assignmentBusy}
+                                            onClick={() => handleAssignWorker({ id: applicant.id, name: applicant.name })}
+                                            className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+                                          >
+                                            Direct assign
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                    {!canManageAssignments && (
+                                      <span className="text-xs font-bold text-foreground/50 shrink-0">{badge.label}</span>
+                                    )}
                                   </div>
                                 </div>
-                                <button 
-                                  onClick={() => handleAssignWorker(applicant)}
-                                  className="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 transition-colors"
-                                >
-                                  Assign
-                                </button>
-                              </div>
-                            ))}
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {canManageAssignments && suggestedWorkers.length > 0 && (
+                          <div className="space-y-3 mb-8">
+                            <h5 className="text-xs font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                              <UserCheck className="w-4 h-4" /> Suggested matches
+                            </h5>
+                            <p className="text-[11px] text-foreground/50">Ranked by role fit, clearance, and reliability (non-AI Week 2 hint).</p>
+                            <div className="space-y-2">
+                              {suggestedWorkers.map((w: any) => {
+                                const sc = scoreWorkerForJob(w, selectedJob.role);
+                                return (
+                                  <div
+                                    key={w.id}
+                                    className="p-3 border border-secondary rounded-xl flex flex-wrap items-center justify-between gap-2 bg-secondary/5"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                        {w.name?.charAt(0)}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-bold truncate">{w.name}</p>
+                                        <p className="text-[10px] text-foreground/50 uppercase tracking-tighter truncate">{w.role}</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="text-[10px] font-black text-primary/80 tabular-nums">+{sc}</span>
+                                      <button
+                                        type="button"
+                                        disabled={assignmentBusy}
+                                        onClick={() => handleAssignWorker({ id: w.id, name: w.name })}
+                                        className="text-xs font-bold text-primary px-3 py-1.5 bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                                      >
+                                        Assign
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
 
                         {/* Manual Search Section */}
-                        <div className="pt-6 border-t border-secondary">
-                          <h5 className="text-xs font-bold text-foreground/50 mb-4 uppercase tracking-widest">Manual Worker Search</h5>
-                          <div className="space-y-4">
-                            <div className="relative group">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-                              <input 
-                                type="text" 
-                                placeholder="Search all workers..." 
-                                onChange={(e) => {
-                                  const term = e.target.value.toLowerCase();
-                                  if (!term) {
-                                    setManualSearchResults([]);
-                                    return;
-                                  }
-                                  const results = allWorkers.filter(w => 
-                                    (w.name.toLowerCase().includes(term) || w.email.toLowerCase().includes(term)) &&
-                                    w.id !== selectedJob.assignedWorkerId
-                                  );
-                                  setManualSearchResults(results.slice(0, 5));
-                                }}
-                                className="w-full pl-10 pr-4 py-3 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors text-sm" 
-                              />
-                            </div>
-                            
-                            {manualSearchResults.length > 0 && (
-                              <div className="bg-secondary/5 rounded-xl border border-secondary divide-y divide-secondary/50 overflow-hidden">
-                                {manualSearchResults.map((w: any) => (
-                                  <div key={w.id} className="p-3 hover:bg-secondary/20 transition-colors flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                                        {w.name.charAt(0)}
+                        {canManageAssignments && (
+                          <div className="pt-6 border-t border-secondary">
+                            <h5 className="text-xs font-bold text-foreground/50 mb-4 uppercase tracking-widest">Manual Worker Search</h5>
+                            <div className="space-y-4">
+                              <div className="relative group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
+                                <input
+                                  type="text"
+                                  placeholder="Search all workers…"
+                                  onChange={(e) => {
+                                    const term = e.target.value.toLowerCase().trim();
+                                    if (!term) {
+                                      setManualSearchResults([]);
+                                      return;
+                                    }
+                                    const scored = allWorkers
+                                      .filter(
+                                        (w) =>
+                                          (String(w.name || "").toLowerCase().includes(term) ||
+                                            String(w.email || "").toLowerCase().includes(term)) &&
+                                          w.id !== selectedJob.assignedWorkerId
+                                      )
+                                      .map((w) => ({ w, score: scoreWorkerForJob(w, selectedJob.role) }))
+                                      .sort((a, b) => b.score - a.score)
+                                      .slice(0, 8)
+                                      .map((x) => x.w);
+                                    setManualSearchResults(scored);
+                                  }}
+                                  className="w-full pl-10 pr-4 py-3 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors text-sm"
+                                />
+                              </div>
+
+                              {manualSearchResults.length > 0 && (
+                                <div className="bg-secondary/5 rounded-xl border border-secondary divide-y divide-secondary/50 overflow-hidden">
+                                  {manualSearchResults.map((w: any) => (
+                                    <div key={w.id} className="p-3 hover:bg-secondary/20 transition-colors flex justify-between items-center gap-2">
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                                          {w.name.charAt(0)}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-bold truncate">{w.name}</p>
+                                          <p className="text-[10px] text-foreground/50 uppercase tracking-tighter truncate">{w.role}</p>
+                                        </div>
                                       </div>
-                                      <div>
-                                        <p className="text-sm font-bold">{w.name}</p>
-                                        <p className="text-[10px] text-foreground/50 uppercase tracking-tighter">{w.role}</p>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <span className="text-[10px] font-black text-primary/80 tabular-nums">
+                                          +{scoreWorkerForJob(w, selectedJob.role)}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          disabled={assignmentBusy}
+                                          onClick={() => {
+                                            handleAssignWorker({ id: w.id, name: w.name });
+                                            setManualSearchResults([]);
+                                          }}
+                                          className="text-xs font-bold text-primary px-3 py-1.5 bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+                                        >
+                                          Assign
+                                        </button>
                                       </div>
                                     </div>
-                                    <button 
-                                      onClick={() => {
-                                        handleAssignWorker(w);
-                                        setManualSearchResults([]);
-                                      }}
-                                      className="text-xs font-bold text-primary px-3 py-1.5 bg-primary/10 rounded-lg hover:bg-primary hover:text-white transition-all"
-                                    >
-                                      Assign
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </>
                     )}
 
