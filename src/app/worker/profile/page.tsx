@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ShieldCheck, FileText, UploadCloud, AlertCircle, Trash2 } from "lucide-react";
 
 type WorkerDocument = {
   id: string;
   type: string;
   fileName: string;
+  fileType?: string;
+  fileSize?: number;
+  fileData?: string;
   uploadedAt: string;
   status: "Pending" | "Approved" | "Rejected";
 };
@@ -21,10 +23,26 @@ type WorkerProfile = {
   phone?: string;
   address?: string;
   legalStatus?: string;
+  status?: string;
+  documentStatus?: string;
+  roles?: string[];
+  neighborhoods?: string[];
+  bio?: string;
   documents?: WorkerDocument[];
   smartServeHas?: boolean;
   foodHandlerHas?: boolean;
 };
+
+const COMMON_OPTIONAL_DOCS = ["SIN Proof", "Void Cheque", "WHMIS Certificate"];
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function WorkerProfile() {
   const [isUploading, setIsUploading] = useState(false);
@@ -37,24 +55,31 @@ export default function WorkerProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingDeleteDoc, setPendingDeleteDoc] = useState<WorkerDocument | null>(null);
 
-  const baseRequiredDocs = [
-    "Government ID",
-    "Profile Photo",
-  ];
   const requiresWorkAuthorization = !["citizen", "pr", "permanent resident", "canadian citizen"]
     .includes((worker?.legalStatus || "").toLowerCase());
-  const commonOptionalDocs = ["SIN Proof", "Void Cheque", "WHMIS Certificate"];
-
-  const documents = worker?.documents || [];
-  const requiredDocs = [
-    ...baseRequiredDocs,
-    ...(requiresWorkAuthorization ? ["Proof of Work Authorization"] : []),
-    ...(worker?.smartServeHas ? ["SmartServe Certificate"] : []),
-    ...(worker?.foodHandlerHas ? ["Food Handler Certificate"] : []),
-  ];
-  const availableDocTypes = Array.from(new Set([...requiredDocs, ...commonOptionalDocs]));
-  const uploadedTypes = new Set(documents.map((d) => d.type));
-  const missingDocs = requiredDocs.filter((required) => !uploadedTypes.has(required));
+  const documents = useMemo(() => worker?.documents || [], [worker?.documents]);
+  const requiredDocs = useMemo(
+    () => [
+      "Government ID",
+      "Profile Photo",
+      ...(requiresWorkAuthorization ? ["Proof of Work Authorization"] : []),
+      ...(worker?.smartServeHas ? ["SmartServe Certificate"] : []),
+      ...(worker?.foodHandlerHas ? ["Food Handler Certificate"] : []),
+    ],
+    [requiresWorkAuthorization, worker?.foodHandlerHas, worker?.smartServeHas],
+  );
+  const availableDocTypes = useMemo(
+    () => Array.from(new Set([...requiredDocs, ...COMMON_OPTIONAL_DOCS])),
+    [requiredDocs],
+  );
+  const uploadedTypes = useMemo(() => new Set(documents.map((d) => d.type)), [documents]);
+  const missingDocs = useMemo(
+    () => requiredDocs.filter((required) => !uploadedTypes.has(required)),
+    [requiredDocs, uploadedTypes],
+  );
+  const accountStatus = worker?.status || "Pending";
+  const documentStatus = worker?.documentStatus || "Pending";
+  const isClearedForWork = accountStatus === "Active" && documentStatus === "Approved";
 
   useEffect(() => {
     const loadUser = async () => {
@@ -65,12 +90,6 @@ export default function WorkerProfile() {
     };
     loadUser();
   }, []);
-
-  useEffect(() => {
-    if (missingDocs.length > 0 && !uploadedTypes.has(docType)) {
-      setDocType(missingDocs[0]);
-    }
-  }, [docType, missingDocs, uploadedTypes]);
 
   const handleUpload = async () => {
     if (!worker) return;
@@ -104,16 +123,20 @@ export default function WorkerProfile() {
       return;
     }
 
-    const now = Date.now();
-    const newDocs: WorkerDocument[] = filesToUpload.map((file, index) => ({
-      id: `DOC-${worker.id}-${now}-${index}`,
-      type: resolvedType,
-      fileName: file.name,
-      uploadedAt: new Date().toISOString(),
-      status: "Pending",
-    }));
-
     try {
+      const now = Date.now();
+      const newDocs: WorkerDocument[] = await Promise.all(
+        filesToUpload.map(async (file, index) => ({
+          id: `DOC-${worker.id}-${now}-${index}`,
+          type: resolvedType,
+          fileName: file.name,
+          fileType: file.type || "application/octet-stream",
+          fileSize: file.size,
+          fileData: await fileToDataUrl(file),
+          uploadedAt: new Date().toISOString(),
+          status: "Pending",
+        })),
+      );
       const res = await fetch("/api/worker/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -186,12 +209,25 @@ export default function WorkerProfile() {
             <h2 className="text-xl font-bold">{worker ? `${worker.firstName || ""} ${worker.lastName || ""}`.trim() || worker.name : "John Doe"}</h2>
             <p className="text-sm text-foreground/50 font-mono mb-4">ID: {worker ? worker.id : "W-1005"}</p>
             
-            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-xs font-bold border border-emerald-500/20">
-              <ShieldCheck className="w-4 h-4" /> Account Active
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${
+              isClearedForWork
+                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+            }`}>
+              {isClearedForWork ? <ShieldCheck className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+              {isClearedForWork ? "Cleared for Shifts" : "Approval Pending"}
             </div>
           </div>
 
           <div className="p-6 rounded-3xl border border-secondary bg-background/50 glass space-y-4">
+            <div>
+              <label className="text-xs font-bold text-foreground/50">ACCOUNT STATUS</label>
+              <p className="font-medium">{accountStatus}</p>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-foreground/50">DOCUMENT STATUS</label>
+              <p className="font-medium">{documentStatus}</p>
+            </div>
             <div>
               <label className="text-xs font-bold text-foreground/50">EMAIL</label>
               <p className="font-medium">{worker?.email || "Not provided"}</p>
@@ -207,6 +243,18 @@ export default function WorkerProfile() {
             <div>
               <label className="text-xs font-bold text-foreground/50">LEGAL STATUS</label>
               <p className="font-medium">{worker?.legalStatus || "Not provided"}</p>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-foreground/50">ROLES</label>
+              <p className="font-medium">{worker?.roles?.length ? worker.roles.join(", ") : "Not provided"}</p>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-foreground/50">SERVICE AREAS</label>
+              <p className="font-medium">{worker?.neighborhoods?.length ? worker.neighborhoods.join(", ") : "Not provided"}</p>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-foreground/50">BIO</label>
+              <p className="font-medium">{worker?.bio || "Not provided"}</p>
             </div>
             <p className="text-xs text-foreground/50 mt-2">Profile details can be updated by company admin.</p>
           </div>

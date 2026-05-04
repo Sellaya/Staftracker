@@ -14,10 +14,16 @@ async function readWorkers() {
 }
 
 function normalizeDocument(doc: any) {
+  const fileData = typeof doc?.fileData === "string" && doc.fileData.startsWith("data:")
+    ? doc.fileData
+    : undefined;
   return {
     id: String(doc?.id || `DOC-${Date.now()}`),
     type: String(doc?.type || "").trim(),
     fileName: String(doc?.fileName || "").trim(),
+    fileType: String(doc?.fileType || "").trim(),
+    fileSize: Number.isFinite(Number(doc?.fileSize)) ? Number(doc.fileSize) : 0,
+    ...(fileData ? { fileData } : {}),
     uploadedAt: new Date(doc?.uploadedAt || Date.now()).toISOString(),
     status: "Pending" as const,
   };

@@ -9,6 +9,8 @@
   --secondary-foreground: #1e293b;
   --accent: #0ea5a4;
   --accent-foreground: #ffffff;
+  --font-geist-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
 @theme inline {

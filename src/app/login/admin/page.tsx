@@ -33,7 +33,7 @@ export default function AdminLogin() {
         const data = await res.json().catch(() => ({}));
         setError(data.error || "Invalid credentials");
       }
-    } catch (err) {
+    } catch {
       setError("Connection failed. Please try again.");
     } finally {
       setIsLoading(false);

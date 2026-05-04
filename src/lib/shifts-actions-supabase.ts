@@ -9,10 +9,32 @@ type ShiftAction =
   | "worker_check_in"
   | "worker_check_out"
   | "client_approve_timesheet"
+  | "client_flag_issue"
+  | "admin_approve_timesheet"
+  | "admin_reject_timesheet"
   | "admin_override_assignment"
   | "admin_finalize_payment"
   | "admin_mark_paid"
   | "admin_mark_invoiced";
+
+function hoursBetweenTimes(start?: unknown, end?: unknown, fallback = 0): number {
+  const parse = (value: unknown) => {
+    const match = String(value || "").match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const meridiem = match[3]?.toUpperCase();
+    if (meridiem === "PM" && hours < 12) hours += 12;
+    if (meridiem === "AM" && hours === 12) hours = 0;
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return hours * 60 + minutes;
+  };
+  const startMinutes = parse(start);
+  const endMinutes = parse(end);
+  if (startMinutes == null || endMinutes == null) return fallback;
+  const diff = endMinutes >= startMinutes ? endMinutes - startMinutes : endMinutes + 24 * 60 - startMinutes;
+  return Number((diff / 60).toFixed(2));
+}
 
 /** Week 2: parity with `shifts/actions` JSON path — updates `shifts` + `timesheets` in Postgres. */
 export async function postShiftActionSupabase(
@@ -35,7 +57,7 @@ export async function postShiftActionSupabase(
   if ((action === "worker_check_in" || action === "worker_check_out") && !hasRole(actor, ["worker"])) {
     return forbidden("Only workers can perform this action");
   }
-  if (action === "client_approve_timesheet" && !hasRole(actor, ["user", "admin", "super_admin"])) {
+  if ((action === "client_approve_timesheet" || action === "client_flag_issue") && !hasRole(actor, ["user", "admin", "super_admin"])) {
     return forbidden("Only client/company users can approve timesheets");
   }
   if (action.startsWith("admin_") && !hasRole(actor, ["admin", "super_admin"])) {
@@ -70,6 +92,7 @@ export async function postShiftActionSupabase(
 
     const actualCheckIn = shift.actual_check_in ?? shift.actualCheckIn;
     const actualCheckOut = String(body?.actualCheckOut || new Date().toLocaleTimeString());
+    const billableHours = hoursBetweenTimes(actualCheckIn, actualCheckOut, Number(shift.hours ?? 0));
 
     let timesheetId = String(shift.timesheet_id ?? shift.timesheetId ?? "").trim();
     if (!timesheetId) {
@@ -90,7 +113,7 @@ export async function postShiftActionSupabase(
       scheduled_end: shift.scheduled_end ?? shift.scheduledEnd ?? null,
       actual_check_in: actualCheckIn ?? null,
       actual_check_out: actualCheckOut,
-      hours: Number(shift.hours ?? 0),
+      hours: billableHours,
       rate: Number(shift.rate ?? 0),
       status: "pending_client_approval",
       created_at: nowIso,
@@ -105,6 +128,7 @@ export async function postShiftActionSupabase(
       .update({
         status: "Completed",
         actual_check_out: actualCheckOut,
+        hours: billableHours,
         timesheet_id: timesheetId,
         payment_status: String(shift.payment_status ?? shift.paymentStatus ?? "pending"),
         invoice_status: String(shift.invoice_status ?? shift.invoiceStatus ?? "pending"),
@@ -118,12 +142,15 @@ export async function postShiftActionSupabase(
     return NextResponse.json(shiftRowToClient(updated as Record<string, unknown>));
   }
 
-  if (action === "client_approve_timesheet") {
+  if (action === "client_approve_timesheet" || action === "admin_approve_timesheet") {
     if (shiftStatus !== "Completed") {
       return NextResponse.json({ error: "Shift must be Completed before timesheet approval" }, { status: 400 });
     }
     const tid = String(shift.timesheet_id ?? shift.timesheetId ?? "");
     if (!tid) return NextResponse.json({ error: "No timesheet found for shift" }, { status: 400 });
+    if (action === "admin_approve_timesheet" && !hasRole(actor, ["admin", "super_admin"])) {
+      return forbidden("Only admins can approve timesheets");
+    }
 
     if (hasRole(actor, ["user"])) {
       const own = await findClientForActor(actor);
@@ -134,7 +161,7 @@ export async function postShiftActionSupabase(
     const { error: tsErr } = await supabase
       .from("timesheets")
       .update({
-        status: "approved_by_client",
+        status: action === "admin_approve_timesheet" ? "approved_by_admin" : "approved_by_client",
         approved_at: nowIso,
         approved_by: actor.id,
         updated_at: nowIso,
@@ -145,14 +172,56 @@ export async function postShiftActionSupabase(
 
     const { data: approvedShift, error: shErr } = await supabase
       .from("shifts")
-      .update({ is_approved: true })
+      .update({ is_approved: true, is_flagged: false, flag_reason: null })
       .eq("id", shiftId)
       .select("*")
       .single();
     if (shErr) return NextResponse.json({ error: shErr.message }, { status: 500 });
 
-    await recordLog("CLIENT_APPROVE_TIMESHEET", `Client approved timesheet ${tid}`, actor.email, actor.id);
+    await recordLog(
+      action === "admin_approve_timesheet" ? "ADMIN_APPROVE_TIMESHEET" : "CLIENT_APPROVE_TIMESHEET",
+      `${action === "admin_approve_timesheet" ? "Admin" : "Client"} approved timesheet ${tid}`,
+      actor.email,
+      actor.id
+    );
     return NextResponse.json(shiftRowToClient(approvedShift as Record<string, unknown>));
+  }
+
+  if (action === "admin_reject_timesheet" || action === "client_flag_issue") {
+    if (shiftStatus !== "Completed") {
+      return NextResponse.json({ error: "Shift must be Completed before timesheet review" }, { status: 400 });
+    }
+    const tid = String(shift.timesheet_id ?? shift.timesheetId ?? "");
+    if (!tid) return NextResponse.json({ error: "No timesheet found for shift" }, { status: 400 });
+    if (action === "admin_reject_timesheet" && !hasRole(actor, ["admin", "super_admin"])) {
+      return forbidden("Only admins can reject timesheets");
+    }
+    if (hasRole(actor, ["user"])) {
+      const own = await findClientForActor(actor);
+      const cid = String(shift.client_id ?? shift.clientId ?? "");
+      if (!own || String(own.id) !== cid) return forbidden("You can only flag timesheets for your own shifts");
+    }
+    const reason = String(body?.reason || body?.flagReason || "Timesheet requires admin review").trim();
+    const tsPatch =
+      action === "admin_reject_timesheet"
+        ? { status: "rejected_by_admin", rejection_reason: reason, updated_at: nowIso }
+        : { status: "issue_flagged", issue_reason: reason, updated_at: nowIso };
+    const { error: tsErr } = await supabase.from("timesheets").update(tsPatch).eq("id", tid);
+    if (tsErr) return NextResponse.json({ error: tsErr.message }, { status: 500 });
+    const { data, error } = await supabase
+      .from("shifts")
+      .update({ is_approved: false, is_flagged: true, flag_reason: reason })
+      .eq("id", shiftId)
+      .select("*")
+      .single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    await recordLog(
+      action === "admin_reject_timesheet" ? "ADMIN_REJECT_TIMESHEET" : "CLIENT_FLAG_TIMESHEET",
+      `${action === "admin_reject_timesheet" ? "Admin rejected" : "Client flagged"} timesheet ${tid}: ${reason}`,
+      actor.email,
+      actor.id
+    );
+    return NextResponse.json(shiftRowToClient(data as Record<string, unknown>));
   }
 
   if (action === "admin_override_assignment") {

@@ -89,6 +89,18 @@ export async function POST(request: Request) {
         scopedClientName = own.name;
       }
       if (!scopedClientId) return NextResponse.json({ error: "Missing client context" }, { status: 400 });
+      if (newJob.venueId) {
+        const { data: venueRows, error: venueError } = await supabase
+          .from("venues")
+          .select("id, client_id")
+          .eq("id", newJob.venueId)
+          .limit(1);
+        if (venueError) return NextResponse.json({ error: venueError.message }, { status: 500 });
+        const venue = venueRows?.[0] as { client_id?: string } | undefined;
+        if (!venue || venue.client_id !== scopedClientId) {
+          return forbidden("Venue does not belong to your client account");
+        }
+      }
       const id = newJob.id || await nextTableId("J", "jobs");
       const payload = {
         id,
@@ -137,20 +149,22 @@ export async function POST(request: Request) {
       return forbidden("Venue does not belong to your client account");
     }
 
-    const nextJob = {
+    let nextJob: any = null;
+    await withFileLock(dbPath, async () => {
+      const jobs = await readDB();
+      nextJob = {
       ...newJob,
-      id: newJob.id || generateId('J', (await readDB()).map((j: any) => String(j.id || ""))),
+      id: newJob.id || generateId('J', jobs.map((j: any) => String(j.id || ""))),
       clientId: scopedClientId,
       clientName: scopedClientName,
       venueId: newJob.venueId ?? null,
       headcount: Number.isFinite(Number(newJob.headcount)) ? Number(newJob.headcount) : 1,
       applicants: Array.isArray(newJob.applicants) ? normalizeApplicants(newJob.applicants) : [],
-    };
-    await withFileLock(dbPath, async () => {
-      const jobs = await readDB();
+      };
       jobs.unshift(nextJob);
       await writeDB(jobs);
     });
+    if (!nextJob) return NextResponse.json({ error: "Failed to create job" }, { status: 500 });
     await recordLog('CREATE_JOB', `Created new job: ${nextJob.role} at ${nextJob.venueName}`, actor.email, actor.id);
 
     return NextResponse.json(nextJob);

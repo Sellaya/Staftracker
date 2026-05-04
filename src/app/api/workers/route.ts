@@ -195,8 +195,8 @@ export async function PUT(request: Request) {
         );
       }
 
-      const dbPayload = workerFileShapeToDb(next);
-      const { id: _wid, ...updateFields } = dbPayload;
+      const updateFields = workerFileShapeToDb(next);
+      delete updateFields.id;
       const { data: saved, error: upErr } = await supabase
         .from("workers")
         .update(updateFields)

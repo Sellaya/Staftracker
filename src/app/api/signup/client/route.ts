@@ -99,7 +99,10 @@ export async function POST(request: Request) {
         created_by_user_id: userId,
         created_at: now,
       });
-      if (clientInsertError) return NextResponse.json({ error: clientInsertError.message }, { status: 500 });
+      if (clientInsertError) {
+        await supabase.from("users").delete().eq("id", userId);
+        return NextResponse.json({ error: clientInsertError.message }, { status: 500 });
+      }
 
       const { error: venueInsertError } = await supabase.from("venues").insert({
         id: venueId,
@@ -114,7 +117,11 @@ export async function POST(request: Request) {
         venue_type: venueType,
         created_at: now,
       });
-      if (venueInsertError) return NextResponse.json({ error: venueInsertError.message }, { status: 500 });
+      if (venueInsertError) {
+        await supabase.from("clients").delete().eq("id", clientId);
+        await supabase.from("users").delete().eq("id", userId);
+        return NextResponse.json({ error: venueInsertError.message }, { status: 500 });
+      }
 
       return NextResponse.json(
         { success: true, userId, clientId, venueId, message: "Client account and first venue created successfully." },

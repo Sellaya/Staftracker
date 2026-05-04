@@ -28,6 +28,9 @@ type DocumentRow = {
   status: DocStatus;
   expiryDate?: string;
   fileName?: string;
+  fileType?: string;
+  fileSize?: number;
+  fileData?: string;
   rejectionReason?: string;
   adminNotes?: string;
 };
@@ -56,6 +59,9 @@ function normalizeWorker(w: Record<string, unknown>): WorkerWithDocs {
       status: ["Pending", "Approved", "Rejected", "Expiring Soon", "Expired"].includes(st) ? st : "Pending",
       expiryDate: d.expiryDate ? String(d.expiryDate) : undefined,
       fileName: d.fileName ? String(d.fileName) : undefined,
+      fileType: d.fileType ? String(d.fileType) : undefined,
+      fileSize: Number.isFinite(Number(d.fileSize)) ? Number(d.fileSize) : undefined,
+      fileData: typeof d.fileData === "string" && d.fileData.startsWith("data:") ? d.fileData : undefined,
       rejectionReason: d.rejectionReason ? String(d.rejectionReason) : undefined,
       adminNotes: d.adminNotes ? String(d.adminNotes) : undefined,
     };
@@ -155,6 +161,9 @@ export default function DocumentQueuePage() {
           id: d.id,
           type: d.type,
           fileName: d.fileName || "",
+          fileType: d.fileType || "",
+          fileSize: d.fileSize || 0,
+          ...(d.fileData ? { fileData: d.fileData } : {}),
           uploadedAt: d.submittedAt,
           status: d.status,
           ...(d.expiryDate ? { expiryDate: d.expiryDate } : {}),
@@ -523,15 +532,35 @@ export default function DocumentQueuePage() {
                 </button>
               </div>
               <div className="flex-1 overflow-auto flex items-center justify-center bg-secondary/5 p-8">
-                <div className="w-full max-w-2xl bg-white border border-secondary rounded-xl shadow-xl flex flex-col items-center justify-center text-black min-h-[40vh] p-8">
-                  <FileText className="w-24 h-24 mb-6 text-gray-300" />
-                  <p className="font-mono text-sm font-bold text-gray-600 text-center">
-                    Files are referenced by name only in this MVP (no file server). Admin reviews metadata here.
-                  </p>
-                  <p className="text-sm mt-4 text-gray-500 font-mono border border-gray-200 px-4 py-2 rounded bg-gray-50 break-all">
-                    {previewDoc.fileName || previewDoc.id}
-                  </p>
-                </div>
+                {previewDoc.fileData && previewDoc.fileType?.startsWith("image/") ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- MVP document previews use data URLs from JSONB/local JSON, not routable static assets.
+                  <img
+                    src={previewDoc.fileData}
+                    alt={previewDoc.fileName || previewDoc.type}
+                    className="max-w-full max-h-full rounded-xl border border-secondary shadow-xl bg-white object-contain"
+                  />
+                ) : previewDoc.fileData && previewDoc.fileType === "application/pdf" ? (
+                  <object
+                    data={previewDoc.fileData}
+                    type="application/pdf"
+                    className="w-full h-full min-h-[70vh] rounded-xl border border-secondary bg-white"
+                  >
+                    <div className="w-full max-w-2xl bg-white border border-secondary rounded-xl shadow-xl flex flex-col items-center justify-center text-black min-h-[40vh] p-8">
+                      <FileText className="w-24 h-24 mb-6 text-gray-300" />
+                      <p className="font-mono text-sm font-bold text-gray-600 text-center">PDF preview is not available in this browser.</p>
+                    </div>
+                  </object>
+                ) : (
+                  <div className="w-full max-w-2xl bg-white border border-secondary rounded-xl shadow-xl flex flex-col items-center justify-center text-black min-h-[40vh] p-8">
+                    <FileText className="w-24 h-24 mb-6 text-gray-300" />
+                    <p className="font-mono text-sm font-bold text-gray-600 text-center">
+                      Preview is available for uploaded images and PDFs. This document is stored for admin review by name and metadata.
+                    </p>
+                    <p className="text-sm mt-4 text-gray-500 font-mono border border-gray-200 px-4 py-2 rounded bg-gray-50 break-all">
+                      {previewDoc.fileName || previewDoc.id}
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

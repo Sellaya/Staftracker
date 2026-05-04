@@ -81,7 +81,7 @@ export default function Dashboard() {
         if (isAdmin) {
           const pendingTs = timesheets.filter(
             (t: any) =>
-              t.status === "pending_client_approval" || t.status === "approved_by_client"
+              t.status === "pending_client_approval" || t.status === "approved_by_client" || t.status === "issue_flagged"
           );
           setAdminKpis({
             workerCount: workers.length,

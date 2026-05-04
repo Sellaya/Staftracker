@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Building2, Search, Filter, MapPin, Settings, X, 
+  Search, MapPin, X,
   Map, Users, Info, PowerOff, Edit3, Car, Navigation,
   Plus, Check, Loader2
 } from "lucide-react";
@@ -119,7 +119,7 @@ export default function VenuesPage() {
       if (res.ok) {
         setVenues(venues.map(v => v.id === id ? { ...v, status: newStatus } : v));
       }
-    } catch (e) {}
+    } catch {}
   };
 
   const toggleDepartment = async (venueId: string, deptName: string) => {
@@ -139,7 +139,7 @@ export default function VenuesPage() {
         const err = await res.json().catch(() => ({}));
         setPanelError(err.error || "Failed to update department.");
       }
-    } catch (e) {
+    } catch {
       setPanelError("Failed to update department.");
     }
   };
@@ -237,7 +237,7 @@ export default function VenuesPage() {
         setVenues(venues.map(v => v.id === selectedVenue.id ? { ...v, ...updates } : v));
         setEditingNotes(false);
       }
-    } catch (e) {}
+    } catch {}
   };
 
   const handleAddVenue = async (e: React.FormEvent) => {
@@ -265,7 +265,7 @@ export default function VenuesPage() {
         setIsAddModalOpen(false);
         setNewVenueData({ name: "", clientId: "", address: "", gps: "", instructions: "", dressCode: "", parkingInfo: "" });
       }
-    } catch (e) {}
+    } catch {}
     finally { setIsAdding(false); }
   };
 

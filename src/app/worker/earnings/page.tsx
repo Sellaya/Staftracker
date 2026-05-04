@@ -82,8 +82,10 @@ export default function WorkerEarnings() {
       const pay = hours * rate;
       const tsSt = tsByShift.get(s.id);
       let label = String(s.paymentStatus || "pending");
-      if (tsSt === "approved_by_client") label = `Pay: ${label}`;
+      if (tsSt === "approved_by_client" || tsSt === "approved_by_admin") label = `Pay: ${label}`;
       if (tsSt === "pending_client_approval") label = "Timesheet pending approval";
+      if (tsSt === "rejected_by_admin") label = "Timesheet rejected";
+      if (tsSt === "issue_flagged") label = "Issue under review";
       rows.push({
         id: s.id,
         date: s.date ? String(s.date) : "—",

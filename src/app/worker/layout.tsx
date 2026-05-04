@@ -1,13 +1,14 @@
 "use client";
 
-import { 
+import {
   CalendarDays, DollarSign, User, LogOut, Bell, Search
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function WorkerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const navigation = [
     { name: "My Dashboard", href: "/worker/dashboard", icon: CalendarDays },
@@ -15,6 +16,12 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
     { name: "Earnings", href: "/worker/earnings", icon: DollarSign },
     { name: "My Profile", href: "/worker/profile", icon: User },
   ];
+
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST" });
+    localStorage.removeItem("user");
+    router.push("/login/worker");
+  };
 
   return (
     <div className="min-h-screen bg-background flex font-sans">
@@ -50,10 +57,14 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
         </div>
 
         <div className="p-4 border-t border-secondary/50">
-          <Link href="/" className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-500/10 transition-all font-bold">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-500/10 transition-all font-bold"
+          >
             <LogOut className="w-5 h-5" />
             Log out
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -69,7 +80,7 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
           </div>
           <div className="flex items-center gap-4">
             <Bell className="w-5 h-5" />
-            <Link href="/" className="text-red-500"><LogOut className="w-5 h-5" /></Link>
+            <button type="button" onClick={handleLogout} className="text-red-500"><LogOut className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -87,10 +98,14 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary border border-primary/20">
                 JD
               </div>
-              <Link href="/" className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-2 text-sm font-bold">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-2 text-sm font-bold"
+              >
                 <LogOut className="w-4 h-4" />
                 Logout
-              </Link>
+              </button>
             </div>
           </div>
         </header>

@@ -10,7 +10,13 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 const PBKDF2_ITERATIONS = 120000;
 const PBKDF2_KEYLEN = 64;
 const PBKDF2_DIGEST = "sha512";
-const SESSION_SECRET = process.env.SESSION_SECRET || "change-me-in-production";
+function getSessionSecret(): string {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
+    throw new Error("SESSION_SECRET must be set in production");
+  }
+  return "dev-only-session-secret";
+}
 
 export type AppRole = "super_admin" | "admin" | "user" | "worker";
 
@@ -40,7 +46,7 @@ function safeJsonParse<T>(raw: string): T | null {
 }
 
 function sign(value: string): string {
-  return crypto.createHmac("sha256", SESSION_SECRET).update(value).digest("base64url");
+  return crypto.createHmac("sha256", getSessionSecret()).update(value).digest("base64url");
 }
 
 function parseCookies(cookieHeader: string | null): Record<string, string> {

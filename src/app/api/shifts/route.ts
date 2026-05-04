@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   try {
     const actor = getSessionUserFromRequest(request);
     if (!actor) return unauthorized();
-    if (!hasRole(actor, ['admin', 'super_admin', 'user'])) return forbidden();
+    if (!hasRole(actor, ['admin', 'super_admin'])) return forbidden("Only admins can create shifts directly");
     const newShift = await request.json();
     if (hasSupabaseEnv()) {
       const supabase = getSupabaseServerClient();
@@ -136,6 +136,7 @@ export async function PUT(request: Request) {
   try {
     const actor = getSessionUserFromRequest(request);
     if (!actor) return unauthorized();
+    if (!hasRole(actor, ["admin", "super_admin"])) return forbidden("Only admins can update shifts directly");
     const updatedShift = await request.json();
     if (!updatedShift?.id) return NextResponse.json({ error: "Missing shift ID" }, { status: 400 });
     if (hasSupabaseEnv()) {

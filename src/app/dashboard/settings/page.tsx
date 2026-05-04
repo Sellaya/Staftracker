@@ -4,21 +4,14 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   User, Shield, Bell, CreditCard, Puzzle, 
-  Save, Key, CheckCircle2, AlertCircle, Smartphone, 
-  Mail, Globe, Moon, Sun, Lock, Users, Plus, Trash2, History
+  Save, CheckCircle2,
+  Users, Plus, Trash2, History
 } from "lucide-react";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("general");
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [theme, setTheme] = useState("dark");
-  const [notifications, setNotifications] = useState({
-    email: true,
-    sms: true,
-    app: true,
-    marketing: false
-  });
 
   const [teamUsers, setTeamUsers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -332,7 +325,7 @@ export default function Settings() {
                         {invoices.length === 0 && (
                           <tr><td colSpan={5} className="p-12 text-center text-foreground/50 italic">No global billing records found.</td></tr>
                         )}
-                        {invoices.map((inv, i) => (
+                        {invoices.map((inv) => (
                           <tr key={inv.id} className="border-b border-secondary/50 last:border-0 hover:bg-secondary/5 transition-colors">
                             <td className="p-4 font-mono text-xs">{inv.id}</td>
                             <td className="p-4 font-medium">{inv.clientName}</td>

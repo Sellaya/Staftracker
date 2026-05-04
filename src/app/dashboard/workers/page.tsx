@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Search, Filter, ShieldCheck, AlertCircle, 
+  Search, ShieldCheck, AlertCircle,
   X, UserCircle, History, DollarSign, 
   FileText, ShieldAlert, Edit3, Trash2, Check, X as CancelIcon,
   Plus, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight
@@ -297,7 +297,7 @@ export default function WorkersPage() {
     } catch (e) { console.error(e); }
   };
 
-  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+  const renderSortIcon = (columnKey: SortKey) => {
     if (sortConfig?.key !== columnKey) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40 group-hover:opacity-100" />;
     return sortConfig.direction === "asc" ? <ArrowUp className="w-3 h-3 ml-1 text-primary" /> : <ArrowDown className="w-3 h-3 ml-1 text-primary" />;
   };
@@ -349,15 +349,15 @@ export default function WorkersPage() {
             <thead className="bg-secondary/30 text-foreground/70 border-b border-secondary/50 select-none">
               <tr>
                 <th className="px-6 py-4 font-medium cursor-pointer group" onClick={() => handleSort("name")}>
-                  <div className="flex items-center">Worker Info <SortIcon columnKey="name" /></div>
+                  <div className="flex items-center">Worker Info {renderSortIcon("name")}</div>
                 </th>
                 <th className="px-6 py-4 font-medium">Approved Roles</th>
                 <th className="px-6 py-4 font-medium cursor-pointer group" onClick={() => handleSort("reliability")}>
-                  <div className="flex items-center">Reliability <SortIcon columnKey="reliability" /></div>
+                  <div className="flex items-center">Reliability {renderSortIcon("reliability")}</div>
                 </th>
                 <th className="px-6 py-4 font-medium">Documents</th>
                 <th className="px-6 py-4 font-medium cursor-pointer group" onClick={() => handleSort("status")}>
-                  <div className="flex items-center">Status <SortIcon columnKey="status" /></div>
+                  <div className="flex items-center">Status {renderSortIcon("status")}</div>
                 </th>
               </tr>
             </thead>

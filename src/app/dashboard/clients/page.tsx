@@ -3,9 +3,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Building2, Search, Filter, MoreVertical, MapPin, DollarSign, Settings,
-  X, UserCircle, Star, History, FileText, ShieldAlert, Edit3, Trash2, Check,
-  CreditCard, Users, Briefcase, RefreshCcw, Heart, ChevronRight, Plus
+  Search, MapPin, DollarSign, Settings,
+  X, Edit3, Trash2,
+  CreditCard, Heart, Plus
 } from "lucide-react";
 
 // Types
@@ -36,7 +36,7 @@ export default function ClientsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [, setIsDeleting] = useState(false);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [workerSearch, setWorkerSearch] = useState("");

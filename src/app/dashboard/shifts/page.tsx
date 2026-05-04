@@ -3,9 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  CalendarDays, Clock, MapPin, Search, Filter, AlertTriangle, 
-  CheckCircle2, X, UserCircle, MoreVertical, ShieldAlert,
-  ArrowRight, Timer, Navigation, ChevronRight, FileText, Check
+  CalendarDays, MapPin, Search, AlertTriangle,
+  CheckCircle2, X, UserCircle, ShieldAlert,
+  FileText, FileWarning
 } from "lucide-react";
 
 // Types
@@ -39,7 +39,7 @@ type Shift = {
 
 export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All");
@@ -138,6 +138,18 @@ export default function ShiftsPage() {
     } catch (e) {
       console.error("Failed to perform shift action", e);
     }
+  };
+
+  const flagShiftIssue = async (id: string) => {
+    const reason = window.prompt("Describe the issue for admin review:");
+    if (!reason?.trim()) return;
+    await performShiftAction(id, "client_flag_issue", { reason: reason.trim() });
+  };
+
+  const rejectTimesheet = async (id: string) => {
+    const reason = window.prompt("Why is this timesheet being rejected?");
+    if (!reason?.trim()) return;
+    await performShiftAction(id, "admin_reject_timesheet", { reason: reason.trim() });
   };
 
   const saveTimeOverride = () => {
@@ -415,14 +427,49 @@ export default function ShiftsPage() {
 
                   {!selectedShift.isApproved && selectedShift.status === "Completed" && !selectedShift.isInvoiced && (
                     <button 
-                      onClick={() => performShiftAction(selectedShift.id, "client_approve_timesheet")}
+                      onClick={() =>
+                        performShiftAction(
+                          selectedShift.id,
+                          isAdminUser ? "admin_approve_timesheet" : "client_approve_timesheet"
+                        )
+                      }
                       className="w-full flex items-center justify-between p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                         <div className="text-left">
                           <p className="font-bold text-sm text-emerald-500">Approve Timesheet</p>
-                          <p className="text-xs text-emerald-500/70 mt-0.5">Client/company approval for worked hours.</p>
+                          <p className="text-xs text-emerald-500/70 mt-0.5">{isAdminUser ? "Admin approval for worked hours." : "Client/company approval for worked hours."}</p>
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {!selectedShift.isApproved && selectedShift.status === "Completed" && !selectedShift.isInvoiced && isAdminUser && (
+                    <button
+                      onClick={() => rejectTimesheet(selectedShift.id)}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <ShieldAlert className="w-5 h-5 text-red-500" />
+                        <div className="text-left">
+                          <p className="font-bold text-sm text-red-500">Reject Timesheet</p>
+                          <p className="text-xs text-red-500/70 mt-0.5">Send it back for correction before finalizing.</p>
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {!selectedShift.isApproved && selectedShift.status === "Completed" && !selectedShift.isInvoiced && isClientUser && (
+                    <button
+                      onClick={() => flagShiftIssue(selectedShift.id)}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileWarning className="w-5 h-5 text-amber-500" />
+                        <div className="text-left">
+                          <p className="font-bold text-sm text-amber-500">Flag Issue</p>
+                          <p className="text-xs text-amber-500/70 mt-0.5">Send a shift or hours issue to admin review.</p>
                         </div>
                       </div>
                     </button>

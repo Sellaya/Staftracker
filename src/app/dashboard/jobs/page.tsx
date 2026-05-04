@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Briefcase, Search, Plus, MapPin, CalendarDays, Clock, 
   DollarSign, AlertCircle, X, Users, CheckCircle2, Edit3, Check, Navigation, Shirt, Car,
-  ChevronLeft, ChevronRight, XCircle, UserCheck, Ban
+  ChevronLeft, ChevronRight, XCircle, UserCheck
 } from "lucide-react";
 import { scoreWorkerForJob } from "@/lib/jobs-shared";
 
@@ -228,7 +228,7 @@ function CustomTimePicker({ value, onChange, label, accent = "primary" }: { valu
   // Generate times (every 30 mins)
   const times = [];
   for(let h=0; h<24; h++) {
-    for(let m of [0, 30]) {
+    for(const m of [0, 30]) {
       const hh = h.toString().padStart(2, '0');
       const mm = m.toString().padStart(2, '0');
       times.push(`${hh}:${mm}`);
@@ -311,12 +311,6 @@ export default function JobsManagement() {
     fetch('/api/workers').then(res => (res.ok ? res.json() : [])).then(data => setAllWorkers(Array.isArray(data) ? data : []));
   }, []);
 
-  useEffect(() => {
-    if (currentUser?.role === "user" && clients.length > 0) {
-      setCreateForm((prev) => (prev.clientId ? prev : { ...prev, clientId: clients[0].id }));
-    }
-  }, [currentUser, clients]);
-
   const getAuthHeaders = () => {
     return {};
   };
@@ -347,6 +341,12 @@ export default function JobsManagement() {
     headcount: 1,
     instructions: "", uniform: "", parking: "", isUrgent: false
   });
+
+  useEffect(() => {
+    if (currentUser?.role === "user" && clients.length > 0) {
+      setCreateForm((prev) => (prev.clientId ? prev : { ...prev, clientId: clients[0].id }));
+    }
+  }, [currentUser, clients]);
 
   // Local API Fetch
   useEffect(() => {
@@ -489,7 +489,7 @@ export default function JobsManagement() {
         setCreateError(err.error || "Failed to publish job.");
         return;
       }
-    } catch (e) {
+    } catch {
       setCreateError("Failed to publish job.");
       return;
     } finally {
@@ -655,7 +655,7 @@ export default function JobsManagement() {
       const updated = { ...targetJob, status: "Cancelled" as JobStatus };
       try {
         await fetch('/api/jobs', { method: 'PUT', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }, body: JSON.stringify(updated) });
-      } catch (e) {}
+      } catch {}
     }
 
     setJobs(jobs.map(j => j.id === selectedJobId ? { ...j, status: "Cancelled" as JobStatus } : j));

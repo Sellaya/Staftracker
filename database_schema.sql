@@ -1,5 +1,8 @@
--- Staff Tracker (Powered by Ferrari) - Supabase Schema
--- Run this in your Supabase SQL Editor
+-- DEPRECATED: This early schema is not compatible with the current MVP app.
+-- Use supabase/week1_schema.sql for a fresh Supabase project.
+-- Use supabase/week2_e2e.sql only to patch older Week 1 installs.
+--
+-- Staff Tracker (Powered by Ferrari) - legacy draft schema
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

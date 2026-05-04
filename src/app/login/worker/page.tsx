@@ -29,7 +29,7 @@ export default function WorkerLogin() {
         const data = await res.json().catch(() => ({}));
         alert(data.error || "Invalid worker credentials");
       }
-    } catch (e) {
+    } catch {
       alert("Login failed");
     } finally {
       setIsLoading(false);

@@ -12,6 +12,8 @@ ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS scheduled_start text;
 ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS scheduled_end text;
 ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS actual_check_in text;
 ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS actual_check_out text;
+ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS rejection_reason text;
+ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS issue_reason text;
 ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS approved_at timestamptz;
 ALTER TABLE timesheets ADD COLUMN IF NOT EXISTS approved_by text;
 

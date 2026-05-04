@@ -47,7 +47,7 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            Toronto's Premier Hospitality Network
+            Toronto&apos;s Premier Hospitality Network
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
@@ -94,7 +94,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-2xl font-bold mb-2">I am a Venue</h3>
                 <p className="text-foreground/70 mb-8 flex-1">
-                  Instantly access Toronto's largest pool of verified, pre-screened hospitality professionals.
+                  Instantly access Toronto&apos;s largest pool of verified, pre-screened hospitality professionals.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Link href="/signup/client" className="flex items-center justify-between w-full px-6 py-4 bg-secondary text-foreground rounded-2xl font-bold hover:bg-secondary/80 transition-all border border-secondary/50 hover:border-accent">

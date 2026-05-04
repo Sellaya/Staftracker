@@ -8,7 +8,6 @@ import {
   CalendarDays,
   Clock,
   DollarSign,
-  CheckCircle2,
   ChevronRight,
   Briefcase,
   AlertCircle,
@@ -54,15 +53,15 @@ export default function WorkerOpenShifts() {
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [withdrawBusyId, setWithdrawBusyId] = useState<string | null>(null);
 
-  const formatTime = (timeStr: string) => {
+  const formatTime = useCallback((timeStr: string) => {
     if (!timeStr) return "--:--";
     const [h, m] = timeStr.split(":").map(Number);
     const ampm = h >= 12 ? "PM" : "AM";
     const h12 = h % 12 || 12;
     return `${h12}:${m.toString().padStart(2, "0")} ${ampm}`;
-  };
+  }, []);
 
-  const mapJobToShift = (dbJob: any, currentWorkerId: string): OpenShift => {
+  const mapJobToShift = useCallback((dbJob: any, currentWorkerId: string): OpenShift => {
     const row = dbJob.applicants?.find((a: any) => a.id === currentWorkerId);
     let myAppStatus: MyAppStatus = "none";
     if (row) {
@@ -88,7 +87,7 @@ export default function WorkerOpenShifts() {
       uniform: dbJob.uniform || "",
       parking: dbJob.parking || "",
     };
-  };
+  }, [formatTime]);
 
   const fetchLiveJobs = useCallback(async (currentWorkerId: string) => {
     try {
@@ -105,7 +104,7 @@ export default function WorkerOpenShifts() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [mapJobToShift]);
 
   useEffect(() => {
     const bootstrap = async () => {

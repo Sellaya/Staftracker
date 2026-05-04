@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
-  Calendar, Clock, MapPin, CheckCircle2, 
+  Calendar, Clock, CheckCircle2,
   User, CreditCard, ChevronRight, LogOut,
-  Bell, Briefcase, Star, Filter, ShieldCheck, Settings, Loader2, FileText
+  Bell, Briefcase, ShieldCheck, Settings, Loader2, FileText
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 

@@ -222,6 +222,8 @@ CREATE TABLE IF NOT EXISTS timesheets (
   hours numeric,
   rate numeric,
   status text NOT NULL DEFAULT 'draft',
+  rejection_reason text,
+  issue_reason text,
   approved_at timestamptz,
   approved_by text,
   created_at timestamptz NOT NULL DEFAULT now(),

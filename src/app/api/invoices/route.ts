@@ -87,6 +87,12 @@ export async function POST(request: Request) {
 
     if (hasSupabaseEnv()) {
       const supabase = getSupabaseServerClient();
+      if (actor.role === "user") {
+        const own = await findClientForActor(actor);
+        if (!own || String(own.id) !== clientId) {
+          return forbidden("You can only generate invoices for your own client account");
+        }
+      }
       let shiftsQuery = supabase
         .from("shifts")
         .select("*")
@@ -129,6 +135,12 @@ export async function POST(request: Request) {
     }
 
     const allShifts = await readDB(shiftPath);
+    if (actor.role === "user") {
+      const own = await resolveActorClient(actor);
+      if (!own || own.id !== clientId) {
+        return forbidden("You can only generate invoices for your own client account");
+      }
+    }
     
     // Filter for shifts that are Approved and NOT already Invoiced
     const shiftsToBill = allShifts.filter((s: any) => 

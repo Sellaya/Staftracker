@@ -17,6 +17,8 @@ export function timesheetRowToClient(row: Record<string, unknown>) {
     hours: Number(row.hours ?? 0),
     rate: Number(row.rate ?? 0),
     status: row.status ?? "draft",
+    rejectionReason: row.rejection_reason ?? row.rejectionReason ?? null,
+    issueReason: row.issue_reason ?? row.issueReason ?? null,
     approvedAt: row.approved_at ?? row.approvedAt ?? null,
     approvedBy: row.approved_by ?? row.approvedBy ?? null,
     createdAt: row.created_at ?? row.createdAt ?? null,

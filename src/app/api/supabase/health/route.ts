@@ -57,7 +57,10 @@ export async function GET() {
       );
     }
 
-    const { error: timesheetsProbe } = await supabase.from("timesheets").select("venue_name,approved_at").limit(1);
+    const { error: timesheetsProbe } = await supabase
+      .from("timesheets")
+      .select("venue_name,approved_at,rejection_reason,issue_reason")
+      .limit(1);
     if (timesheetsProbe) {
       const msg = timesheetsProbe.message || "";
       const looksLikeMissingColumn =
