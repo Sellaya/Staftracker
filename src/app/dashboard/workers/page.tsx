@@ -306,12 +306,12 @@ export default function WorkersPage() {
     <div className="max-w-7xl mx-auto space-y-4 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black tracking-tight">Worker Management</h1>
+          <h1 className="text-2xl font-medium tracking-tight">Worker Management</h1>
           <p className="text-muted-foreground mt-1 text-sm font-medium">Manage shift staff, documents, and reliability.</p>
         </div>
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="px-3 py-2 bg-primary text-primary-foreground font-bold rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-all text-sm"
+          className="px-3 py-2 bg-primary text-primary-foreground font-medium rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-all text-sm"
         >
           <Plus className="w-4 h-4" /> Add Worker
         </button>
@@ -334,7 +334,7 @@ export default function WorkersPage() {
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`whitespace-nowrap px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+                className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                   filter === f ? "bg-primary text-primary-foreground" : "border border-border bg-card hover:bg-muted"
                 }`}
               >
@@ -348,15 +348,15 @@ export default function WorkersPage() {
           <table className="w-full text-sm text-left">
             <thead className="bg-muted text-muted-foreground border-b border-border select-none">
               <tr>
-                <th className="px-4 py-3 font-bold cursor-pointer group" onClick={() => handleSort("name")}>
+                <th className="px-4 py-3 font-medium cursor-pointer group" onClick={() => handleSort("name")}>
                   <div className="flex items-center">Worker Info {renderSortIcon("name")}</div>
                 </th>
-                <th className="px-4 py-3 font-bold">Approved Roles</th>
-                <th className="px-4 py-3 font-bold cursor-pointer group" onClick={() => handleSort("reliability")}>
+                <th className="px-4 py-3 font-medium">Approved Roles</th>
+                <th className="px-4 py-3 font-medium cursor-pointer group" onClick={() => handleSort("reliability")}>
                   <div className="flex items-center">Reliability {renderSortIcon("reliability")}</div>
                 </th>
-                <th className="px-4 py-3 font-bold">Documents</th>
-                <th className="px-4 py-3 font-bold cursor-pointer group" onClick={() => handleSort("status")}>
+                <th className="px-4 py-3 font-medium">Documents</th>
+                <th className="px-4 py-3 font-medium cursor-pointer group" onClick={() => handleSort("status")}>
                   <div className="flex items-center">Status {renderSortIcon("status")}</div>
                 </th>
               </tr>
@@ -373,12 +373,12 @@ export default function WorkersPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-medium text-primary">
                         {worker.name.charAt(0)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-bold group-hover:text-primary transition-colors">{worker.name}</p>
+                          <p className="font-medium group-hover:text-primary transition-colors">{worker.name}</p>
                           {(Array.isArray(worker.flags) ? worker.flags : []).length > 0 && (
                             <ShieldAlert className="w-3 h-3 text-red-500" />
                           )}
@@ -390,10 +390,10 @@ export default function WorkersPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {(Array.isArray(worker.roles) ? worker.roles : []).map((role: string) => (
-                        <span key={role} className="px-2 py-0.5 bg-muted rounded-md text-xs font-bold text-muted-foreground">{role}</span>
+                        <span key={role} className="px-2 py-0.5 bg-muted rounded-md text-xs font-medium text-muted-foreground">{role}</span>
                       ))}
                       {(Array.isArray(worker.roleOverrides) ? worker.roleOverrides : []).map((role: string) => (
-                        <span key={role} className="px-2 py-1 bg-amber-500/20 text-amber-500 rounded-md text-xs font-bold border border-amber-500/30">
+                        <span key={role} className="px-2 py-1 bg-amber-500/20 text-amber-500 rounded-md text-xs font-medium border border-amber-500/30">
                           {role} (Override)
                         </span>
                       ))}
@@ -424,7 +424,7 @@ export default function WorkersPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       worker.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                     }`}>
                       {worker.status}
@@ -446,7 +446,7 @@ export default function WorkersPage() {
         {/* Pagination Controls */}
         {totalPages > 1 && (
           <div className="p-3 border-t border-border flex items-center justify-between bg-card">
-            <span className="text-xs font-bold text-muted-foreground">
+            <span className="text-xs font-medium text-muted-foreground">
               Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, processedWorkers.length)} of {processedWorkers.length} workers
             </span>
             <div className="flex gap-2">
@@ -488,13 +488,13 @@ export default function WorkersPage() {
             >
               <div className="p-6 border-b border-secondary flex justify-between items-start bg-secondary/5">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-2xl">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center font-medium text-primary text-2xl">
                     {selectedWorker.name.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <h2 className="text-2xl font-medium flex items-center gap-2">
                       {selectedWorker.name}
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         selectedWorker.status === "Active"
                           ? "bg-emerald-500/10 text-emerald-500"
                           : selectedWorker.status === "Pending"
@@ -539,13 +539,13 @@ export default function WorkersPage() {
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div>
-                          <h4 className="text-xs font-bold text-foreground/50 mb-1">CONTACT INFO</h4>
+                          <h4 className="text-xs font-medium text-foreground/50 mb-1">CONTACT INFO</h4>
                           <p className="text-sm">{selectedWorker.email}</p>
                           <p className="text-sm">{selectedWorker.phone}</p>
                           <p className="text-sm">{selectedWorker.address || "—"}</p>
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-foreground/50 mb-1">LOCATION & AVAILABILITY (MVP)</h4>
+                          <h4 className="text-xs font-medium text-foreground/50 mb-1">LOCATION & AVAILABILITY (MVP)</h4>
                           <p className="text-sm">
                             <span className="text-foreground/50">Postal FSA:</span>{" "}
                             {selectedWorker.postalCode || "—"}
@@ -568,9 +568,9 @@ export default function WorkersPage() {
                           ) : null}
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-foreground/50 mb-1">PERFORMANCE</h4>
+                          <h4 className="text-xs font-medium text-foreground/50 mb-1">PERFORMANCE</h4>
                           <div>
-                            <span className="text-2xl font-bold">{selectedWorker.reliability}%</span>
+                            <span className="text-2xl font-medium">{selectedWorker.reliability}%</span>
                             <span className="text-sm text-foreground/70 ml-1">Reliability</span>
                           </div>
                         </div>
@@ -578,7 +578,7 @@ export default function WorkersPage() {
 
                       <div className="space-y-4">
                         <div>
-                          <h4 className="text-xs font-bold text-foreground/50 mb-1">DOCUMENTS</h4>
+                          <h4 className="text-xs font-medium text-foreground/50 mb-1">DOCUMENTS</h4>
                           <div className="flex items-center gap-3">
                             <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium ${
                               selectedWorker.documentStatus === "Approved" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
@@ -588,18 +588,18 @@ export default function WorkersPage() {
                               <FileText className="w-4 h-4" /> {selectedWorker.documentStatus}
                             </div>
                             {selectedWorker.documentStatus === "Pending" && (
-                              <button onClick={() => approveDocuments(selectedWorker.id)} className="text-xs font-bold text-emerald-500 hover:underline">
+                              <button onClick={() => approveDocuments(selectedWorker.id)} className="text-xs font-medium text-emerald-500 hover:underline">
                                 Quick Approve
                               </button>
                             )}
                           </div>
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-foreground/50 mb-1">ACTIONS</h4>
+                          <h4 className="text-xs font-medium text-foreground/50 mb-1">ACTIONS</h4>
                           <div className="flex flex-col gap-2">
                             <button 
                               onClick={() => toggleSuspend(selectedWorker.id)}
-                              className={`w-full py-2 rounded-lg text-sm font-bold border transition-colors ${
+                              className={`w-full py-2 rounded-lg text-sm font-medium border transition-colors ${
                                 selectedWorker.status === "Active" 
                                   ? "border-red-500/50 text-red-500 hover:bg-red-500/10" 
                                   : "border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
@@ -613,7 +613,7 @@ export default function WorkersPage() {
                             </button>
                             <button 
                               onClick={() => handleDeleteWorker(selectedWorker.id)}
-                              className="w-full py-2 rounded-lg text-sm font-bold border border-red-500 bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                              className="w-full py-2 rounded-lg text-sm font-medium border border-red-500 bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
                             >
                               <Trash2 className="w-4 h-4" /> Delete Worker Profile
                             </button>
@@ -624,7 +624,7 @@ export default function WorkersPage() {
 
                     <div className="border-t border-secondary pt-6">
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-sm font-bold flex items-center gap-2">
+                        <h4 className="text-sm font-medium flex items-center gap-2">
                           <ShieldCheck className="w-4 h-4 text-primary" /> Role Eligibility
                         </h4>
                       </div>
@@ -633,7 +633,7 @@ export default function WorkersPage() {
                           <span key={role} className="px-3 py-1 bg-secondary rounded-lg text-sm font-medium">{role}</span>
                         ))}
                         {(Array.isArray(selectedWorker.roleOverrides) ? selectedWorker.roleOverrides : []).map((role: string) => (
-                          <span key={role} className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-lg text-sm font-bold">
+                          <span key={role} className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-lg text-sm font-medium">
                             {role} (Admin Override)
                           </span>
                         ))}
@@ -649,7 +649,7 @@ export default function WorkersPage() {
                             <button 
                               key={role}
                               onClick={() => overrideRole(selectedWorker.id, role)}
-                              className="px-3 py-1 text-xs font-bold border border-secondary rounded-lg hover:bg-secondary/50 hover:text-primary transition-colors"
+                              className="px-3 py-1 text-xs font-medium border border-secondary rounded-lg hover:bg-secondary/50 hover:text-primary transition-colors"
                             >
                               + Override {role}
                             </button>
@@ -659,7 +659,7 @@ export default function WorkersPage() {
                     </div>
 
                     <div className="border-t border-secondary pt-6">
-                      <h4 className="text-sm font-bold flex items-center gap-2 mb-4">
+                      <h4 className="text-sm font-medium flex items-center gap-2 mb-4">
                         <Edit3 className="w-4 h-4 text-primary" /> Admin Notes & Flags
                       </h4>
                       
@@ -721,7 +721,7 @@ export default function WorkersPage() {
                         />
                         <button 
                           onClick={() => addNote(selectedWorker.id)}
-                          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-lg hover:bg-primary/90"
+                          className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg hover:bg-primary/90"
                         >
                           Add Note
                         </button>
@@ -736,12 +736,12 @@ export default function WorkersPage() {
                       selectedWorker.shiftHistory.map((shift: any, i: number) => (
                         <div key={i} className="p-4 rounded-xl border border-secondary bg-secondary/5 flex justify-between items-center">
                           <div>
-                            <p className="font-bold">{shift.role} @ {shift.venue}</p>
+                            <p className="font-medium">{shift.role} @ {shift.venue}</p>
                             <p className="text-xs text-foreground/70">{shift.date}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold">{shift.hours} hours</p>
-                            <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">Completed</span>
+                            <p className="font-medium">{shift.hours} hours</p>
+                            <span className="text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">Completed</span>
                           </div>
                         </div>
                       ))
@@ -754,11 +754,11 @@ export default function WorkersPage() {
                 {activeTab === 'earnings' && (
                   <div className="space-y-6">
                     <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-primary/5 border border-emerald-500/20">
-                      <p className="text-sm font-bold text-emerald-500 mb-1">Total Lifetime Earnings</p>
-                      <p className="text-4xl font-black">{selectedWorker.lifetimeEarnings}</p>
+                      <p className="text-sm font-medium text-emerald-500 mb-1">Total Lifetime Earnings</p>
+                      <p className="text-4xl font-medium">{selectedWorker.lifetimeEarnings}</p>
                     </div>
                     
-                    <h4 className="text-sm font-bold mb-2">Earnings Breakdown</h4>
+                    <h4 className="text-sm font-medium mb-2">Earnings Breakdown</h4>
                     <div className="space-y-3">
                       {selectedWorker.shiftHistory.length > 0 ? (
                         selectedWorker.shiftHistory.map((shift: any, i: number) => (
@@ -767,7 +767,7 @@ export default function WorkersPage() {
                               <p className="text-sm font-medium">{shift.date}</p>
                               <p className="text-xs text-foreground/50">{shift.venue}</p>
                             </div>
-                            <span className="font-bold text-lg">{shift.pay}</span>
+                            <span className="font-medium text-lg">{shift.pay}</span>
                           </div>
                         ))
                       ) : (
@@ -800,7 +800,7 @@ export default function WorkersPage() {
               className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-background border border-secondary shadow-2xl rounded-3xl z-[70] overflow-hidden"
             >
               <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
-                <h2 className="text-xl font-bold flex items-center gap-2">
+                <h2 className="text-xl font-medium flex items-center gap-2">
                   <Plus className="w-5 h-5 text-primary" /> Onboard New Worker
                 </h2>
                 <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors">
@@ -809,25 +809,25 @@ export default function WorkersPage() {
               </div>
               <form onSubmit={handleAddWorker} className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">FULL NAME</label>
+                  <label className="text-xs font-medium text-foreground/70">FULL NAME</label>
                   <input required type="text" value={newWorkerData.name} onChange={e => setNewWorkerData({...newWorkerData, name: e.target.value})} placeholder="e.g. John Doe" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-foreground/70">EMAIL ADDRESS</label>
+                    <label className="text-xs font-medium text-foreground/70">EMAIL ADDRESS</label>
                     <input required type="email" value={newWorkerData.email} onChange={e => setNewWorkerData({...newWorkerData, email: e.target.value})} placeholder="john@example.com" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-foreground/70">PHONE NUMBER</label>
+                    <label className="text-xs font-medium text-foreground/70">PHONE NUMBER</label>
                     <input required type="tel" value={newWorkerData.phone} onChange={e => setNewWorkerData({...newWorkerData, phone: e.target.value})} placeholder="(416) 000-0000" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">RESIDENTIAL ADDRESS</label>
+                  <label className="text-xs font-medium text-foreground/70">RESIDENTIAL ADDRESS</label>
                   <input required type="text" value={newWorkerData.address} onChange={e => setNewWorkerData({...newWorkerData, address: e.target.value})} placeholder="123 Street Name, Toronto" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">INITIAL ROLES (Select multiple)</label>
+                  <label className="text-xs font-medium text-foreground/70">INITIAL ROLES (Select multiple)</label>
                   <div className="flex flex-wrap gap-2">
                     {["Bartender", "Server", "Chef", "Security", "General Labor"].map(role => (
                       <button
@@ -839,7 +839,7 @@ export default function WorkersPage() {
                             : [...newWorkerData.roles, role];
                           setNewWorkerData({...newWorkerData, roles});
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                           newWorkerData.roles.includes(role) ? "bg-primary border-primary text-white" : "border-secondary hover:border-primary/50"
                         }`}
                       >
@@ -849,8 +849,8 @@ export default function WorkersPage() {
                   </div>
                 </div>
                 <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 border border-secondary rounded-xl font-bold hover:bg-secondary/50 transition-colors">Cancel</button>
-                  <button type="submit" disabled={isAdding} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 border border-secondary rounded-xl font-medium hover:bg-secondary/50 transition-colors">Cancel</button>
+                  <button type="submit" disabled={isAdding} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                     {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Save Worker</>}
                   </button>
                 </div>
@@ -867,12 +867,12 @@ export default function WorkersPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsEditModalOpen(false)} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]" />
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-background border border-secondary shadow-2xl rounded-3xl z-[70] overflow-hidden">
               <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
-                <h2 className="text-xl font-bold">Edit Worker Profile</h2>
+                <h2 className="text-xl font-medium">Edit Worker Profile</h2>
                 <button onClick={() => setIsEditModalOpen(false)}><X size={20}/></button>
               </div>
               <form onSubmit={handleUpdateWorker} className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">FULL NAME</label>
+                  <label className="text-xs font-medium text-foreground/70">FULL NAME</label>
                   <input required type="text" value={editWorkerData.name} onChange={e => setEditWorkerData({...editWorkerData, name: e.target.value})} className="w-full px-4 py-2 bg-secondary/10 border border-secondary rounded-xl" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -880,7 +880,7 @@ export default function WorkersPage() {
                   <input required type="tel" value={editWorkerData.phone} onChange={e => setEditWorkerData({...editWorkerData, phone: e.target.value})} className="px-4 py-2 bg-secondary/10 border border-secondary rounded-xl" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">ROLES</label>
+                  <label className="text-xs font-medium text-foreground/70">ROLES</label>
                   <div className="flex flex-wrap gap-2">
                     {["Bartender", "Server", "Chef", "Security", "Labor"].map(role => (
                       <button
@@ -892,14 +892,14 @@ export default function WorkersPage() {
                             : [...editWorkerData.roles, role];
                           setEditWorkerData({...editWorkerData, roles});
                         }}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold border ${editWorkerData.roles.includes(role) ? "bg-primary text-white" : "border-secondary"}`}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium border ${editWorkerData.roles.includes(role) ? "bg-primary text-white" : "border-secondary"}`}
                       >
                         {role}
                       </button>
                     ))}
                   </div>
                 </div>
-                <button type="submit" className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl mt-4">Save Changes</button>
+                <button type="submit" className="w-full py-3 bg-primary text-primary-foreground font-medium rounded-xl mt-4">Save Changes</button>
               </form>
             </motion.div>
           </>

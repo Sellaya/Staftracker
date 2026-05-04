@@ -1,153 +1,78 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BrainCircuit, Sliders, Zap, History, Settings2 } from "lucide-react";
+import { BrainCircuit, Briefcase, Users, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Notice, PageHeader, WorkspaceCard } from "@/components/ui/workspace";
 
-export default function AIEnginePage() {
-  const recentAssignments: { shift: string; match: string; time: string }[] = [];
-
+/**
+ * Route preserved for admin nav. Staff Tracker MVP uses manual admin assignment only —
+ * no automated matching, voice agent, or algorithm configuration.
+ */
+export default function AIInfoPage() {
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-          <BrainCircuit className="w-8 h-8 text-primary" />
-          AI Assignment Engine
-        </h1>
-        <p className="text-foreground/70 mt-1">Fine-tune the algorithm weights for automatic shift assignments.</p>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <WorkspaceCard className="premium-panel" padding="lg">
+        <PageHeader
+          eyebrow="Operations model"
+          title="Manual assignment workspace"
+          description="This MVP routes hospitality shifts through your team: workers apply, admins confirm or assign, and shifts are created. There is no automated matching engine in scope."
+        />
+      </WorkspaceCard>
+
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        <Notice tone="blue" title="MVP scope">
+          <p>
+            Use <strong>Jobs</strong> to review applicants, confirm or reject, and directly assign workers. Each confirmed
+            assignment creates the corresponding shift. Self-serve &quot;instant book&quot; and AI call agents are{" "}
+            <strong>not</strong> part of this release.
+          </p>
+        </Notice>
+      </motion.div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/dashboard/jobs"
+          className="workspace-card group flex items-center justify-between gap-3 p-4 transition-colors hover:border-primary/30"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Briefcase className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Jobs & applicants</p>
+              <p className="text-xs font-medium text-muted-foreground">Confirm, assign, unassign</p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
+
+        <Link
+          href="/dashboard/workers"
+          className="workspace-card group flex items-center justify-between gap-3 p-4 transition-colors hover:border-primary/30"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-700">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Workers</p>
+              <p className="text-xs font-medium text-muted-foreground">Activation & documents</p>
+            </div>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-6 rounded-2xl glass bg-background/50 border border-secondary"
-          >
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-primary" /> Priority Weighting
-            </h2>
-            
-            <div className="space-y-8">
-              {/* Slider 1 */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-sm">Worker Rating (Stars)</span>
-                  <span className="font-bold text-primary text-sm">40%</span>
-                </div>
-                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: '40%' }}></div>
-                </div>
-              </div>
-              
-              {/* Slider 2 */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-sm">Reliability Score (Completion Rate)</span>
-                  <span className="font-bold text-primary text-sm">35%</span>
-                </div>
-                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: '35%' }}></div>
-                </div>
-              </div>
-
-              {/* Slider 3 */}
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-sm">Proximity to Venue (Distance)</span>
-                  <span className="font-bold text-primary text-sm">25%</span>
-                </div>
-                <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: '25%' }}></div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-8 flex justify-end">
-              <button className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
-                Save Algorithm Weights
-              </button>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="p-6 rounded-2xl glass bg-background/50 border border-secondary"
-          >
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <Settings2 className="w-5 h-5 text-primary" /> Assignment Restrictions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border border-secondary rounded-xl bg-secondary/10">
-                <p className="text-sm text-foreground/70 mb-2">Max Assignment Radius</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">25 km</span>
-                  <button className="text-sm text-primary font-medium">Edit</button>
-                </div>
-              </div>
-              <div className="p-4 border border-secondary rounded-xl bg-secondary/10">
-                <p className="text-sm text-foreground/70 mb-2">Min. Reliability Score</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold">85%</span>
-                  <button className="text-sm text-primary font-medium">Edit</button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+      <WorkspaceCard padding="md">
+        <div className="flex gap-3">
+          <BrainCircuit className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+          <p className="text-sm font-medium leading-relaxed text-muted-foreground">
+            Future phases may explore assistive tools; anything beyond this page remains out of scope until product and
+            compliance sign-off.
+          </p>
         </div>
-
-        <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="p-6 rounded-2xl glass bg-primary/5 border border-primary/20"
-          >
-            <h3 className="font-bold mb-2 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-primary" /> AI Live Call Agent
-            </h3>
-            <p className="text-sm text-foreground/70 mb-4">
-              The 24/7 Voice AI is currently active, routing calls and handling shift inquiries.
-            </p>
-            <div className="flex items-center justify-between p-3 bg-background rounded-lg border border-secondary">
-              <span className="text-sm font-medium">Status</span>
-              <span className="flex h-3 w-3 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-              </span>
-            </div>
-            <button className="w-full mt-4 bg-background border border-secondary text-foreground py-2 rounded-lg text-sm font-medium hover:bg-secondary/50 transition-colors">
-              View Call Transcripts
-            </button>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="p-6 rounded-2xl glass bg-background/50 border border-secondary"
-          >
-            <h3 className="font-bold mb-4 flex items-center gap-2">
-              <History className="w-4 h-4" /> Recent AI Assignments
-            </h3>
-            <div className="space-y-3">
-              {recentAssignments.map((log, i) => (
-                <div key={i} className="text-sm border-b border-secondary/30 pb-2 last:border-0 last:pb-0">
-                  <p className="font-medium truncate">{log.shift}</p>
-                  <div className="flex justify-between text-xs text-foreground/50 mt-1">
-                    <span>Matched: {log.match}</span>
-                    <span>{log.time}</span>
-                  </div>
-                </div>
-              ))}
-              {recentAssignments.length === 0 && (
-                <p className="text-sm text-foreground/50">No assignment history yet.</p>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      </div>
+      </WorkspaceCard>
     </div>
   );
 }

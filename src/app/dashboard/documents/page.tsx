@@ -253,7 +253,7 @@ export default function DocumentQueuePage() {
     return (
       <div className="max-w-xl mx-auto p-8 rounded-2xl border border-secondary bg-background/80 text-center">
         <ShieldAlert className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-        <h1 className="text-xl font-bold mb-2">Admin only</h1>
+        <h1 className="text-xl font-medium mb-2">Admin only</h1>
         <p className="text-foreground/70 text-sm">Document verification is only available to platform administrators.</p>
       </div>
     );
@@ -267,7 +267,7 @@ export default function DocumentQueuePage() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-bold border ${
+            className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-medium border ${
               notification.type === "success"
                 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 backdrop-blur-md"
                 : "bg-red-500/10 text-red-500 border-red-500/20 backdrop-blur-md"
@@ -281,12 +281,12 @@ export default function DocumentQueuePage() {
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Document Verification</h1>
+          <h1 className="text-3xl font-medium tracking-tight">Document Verification</h1>
           <p className="text-foreground/70 mt-1">
             MVP: review worker uploads, approve or reject with a reason. Changes save to worker records.
           </p>
           {loadError && (
-            <p className="mt-2 text-sm font-bold text-red-500">{loadError}</p>
+            <p className="mt-2 text-sm font-medium text-red-500">{loadError}</p>
           )}
         </div>
 
@@ -306,10 +306,10 @@ export default function DocumentQueuePage() {
         <div className="w-full lg:w-1/3 flex flex-col gap-6 overflow-y-auto pr-2 hide-scrollbar">
           <div className="glass rounded-2xl bg-background/50 border border-secondary overflow-hidden flex flex-col flex-shrink-0">
             <div className="p-4 border-b border-secondary/50 bg-secondary/10 flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
-              <h2 className="font-bold flex items-center gap-2">
+              <h2 className="font-medium flex items-center gap-2">
                 <UserCircle className="w-5 h-5 text-primary" /> Pending Review
               </h2>
-              <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 rounded-full">
                 {workersWithPending.length}
               </span>
             </div>
@@ -329,7 +329,7 @@ export default function DocumentQueuePage() {
                     }`}
                   >
                     <div>
-                      <h3 className="font-bold">{worker.name}</h3>
+                      <h3 className="font-medium">{worker.name}</h3>
                       <p className="text-xs text-foreground/70">
                         {pendingCount} pending document{pendingCount !== 1 ? "s" : ""}
                       </p>
@@ -348,10 +348,10 @@ export default function DocumentQueuePage() {
 
           <div className="glass rounded-2xl bg-background/50 border border-secondary overflow-hidden flex flex-col flex-shrink-0">
             <div className="p-4 border-b border-secondary/50 bg-red-500/5 flex justify-between items-center sticky top-0 z-10 backdrop-blur-md">
-              <h2 className="font-bold flex items-center gap-2 text-amber-500">
+              <h2 className="font-medium flex items-center gap-2 text-amber-500">
                 <AlertCircle className="w-5 h-5" /> Expiry Alerts
               </h2>
-              <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              <span className="bg-amber-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
                 {workersWithExpiry.length}
               </span>
             </div>
@@ -371,8 +371,8 @@ export default function DocumentQueuePage() {
                     }`}
                   >
                     <div>
-                      <h3 className="font-bold">{worker.name}</h3>
-                      <p className={`text-xs font-bold ${hasExpired ? "text-red-500" : "text-amber-500"}`}>
+                      <h3 className="font-medium">{worker.name}</h3>
+                      <p className={`text-xs font-medium ${hasExpired ? "text-red-500" : "text-amber-500"}`}>
                         {hasExpired ? "Expired document" : "Expiring soon"}
                       </p>
                     </div>
@@ -394,11 +394,11 @@ export default function DocumentQueuePage() {
             <>
               <div className="p-6 border-b border-secondary/50 bg-secondary/5 flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xl">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center font-medium text-primary text-xl">
                     {selectedWorker.name.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{selectedWorker.name}</h2>
+                    <h2 className="text-2xl font-medium">{selectedWorker.name}</h2>
                     <p className="text-sm text-foreground/70">
                       {selectedWorker.email} • {selectedWorker.phone}
                     </p>
@@ -407,14 +407,14 @@ export default function DocumentQueuePage() {
                 </div>
                 <Link
                   href="/dashboard/workers"
-                  className="text-sm font-bold text-primary hover:underline flex items-center gap-1"
+                  className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
                 >
                   View in Workers <Eye className="w-4 h-4" />
                 </Link>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                <h3 className="font-bold text-lg border-b border-secondary pb-2">Document Submissions</h3>
+                <h3 className="font-medium text-lg border-b border-secondary pb-2">Document Submissions</h3>
                 {selectedWorker.documents.length === 0 && (
                   <p className="text-sm text-foreground/50">No documents uploaded yet.</p>
                 )}
@@ -435,9 +435,9 @@ export default function DocumentQueuePage() {
                   >
                     <div className="flex-1 space-y-2">
                       <div className="flex justify-between items-start">
-                        <h4 className="font-bold text-lg">{doc.type}</h4>
+                        <h4 className="font-medium text-lg">{doc.type}</h4>
                         <span
-                          className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                             doc.status === "Pending"
                               ? "bg-secondary text-foreground"
                               : doc.status === "Approved"
@@ -456,11 +456,11 @@ export default function DocumentQueuePage() {
                       {doc.fileName && <p className="text-sm text-foreground/70">File: {doc.fileName}</p>}
                       <p className="text-sm">Submitted {formatSubmitted(doc.submittedAt)}</p>
                       {doc.rejectionReason && (
-                        <p className="text-sm font-bold text-red-500">Reason: {doc.rejectionReason}</p>
+                        <p className="text-sm font-medium text-red-500">Reason: {doc.rejectionReason}</p>
                       )}
                       {doc.expiryDate && (
                         <p
-                          className={`text-sm font-bold ${doc.status === "Expired" ? "text-red-500" : "text-amber-500"}`}
+                          className={`text-sm font-medium ${doc.status === "Expired" ? "text-red-500" : "text-amber-500"}`}
                         >
                           Expiry: {doc.expiryDate}
                         </p>
@@ -471,7 +471,7 @@ export default function DocumentQueuePage() {
                             type="button"
                             disabled={saving}
                             onClick={() => setRejectDoc({ workerId: selectedWorker.id, doc })}
-                            className="flex-1 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                            className="flex-1 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                           >
                             Reject
                           </button>
@@ -479,7 +479,7 @@ export default function DocumentQueuePage() {
                             type="button"
                             disabled={saving}
                             onClick={() => setApproveDoc({ workerId: selectedWorker.id, doc })}
-                            className="flex-1 py-2 bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                            className="flex-1 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors disabled:opacity-50"
                           >
                             Approve
                           </button>
@@ -492,7 +492,7 @@ export default function DocumentQueuePage() {
                       onClick={() => setPreviewDoc(doc)}
                     >
                       <FileImage className="w-10 h-10 text-foreground/30 mb-2 group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-bold text-foreground/50 group-hover:text-foreground">Preview</span>
+                      <span className="text-xs font-medium text-foreground/50 group-hover:text-foreground">Preview</span>
                     </button>
                   </div>
                 ))}
@@ -501,7 +501,7 @@ export default function DocumentQueuePage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-foreground/40">
               <UserCircle className="w-16 h-16 mb-4 opacity-50" />
-              <p className="font-bold text-center">
+              <p className="font-medium text-center">
                 {searchQuery ? "No worker found matching your search." : "Select a worker to review documents"}
               </p>
             </div>
@@ -526,7 +526,7 @@ export default function DocumentQueuePage() {
               className="relative w-full max-w-4xl h-[90vh] bg-background border border-secondary rounded-2xl shadow-2xl flex flex-col overflow-hidden"
             >
               <div className="p-4 border-b border-secondary flex justify-between items-center bg-secondary/10">
-                <h3 className="font-bold text-lg">{previewDoc.type}</h3>
+                <h3 className="font-medium text-lg">{previewDoc.type}</h3>
                 <button type="button" onClick={() => setPreviewDoc(null)} className="p-2 hover:bg-secondary rounded-full">
                   <X className="w-5 h-5" />
                 </button>
@@ -547,13 +547,13 @@ export default function DocumentQueuePage() {
                   >
                     <div className="w-full max-w-2xl bg-white border border-secondary rounded-xl shadow-xl flex flex-col items-center justify-center text-black min-h-[40vh] p-8">
                       <FileText className="w-24 h-24 mb-6 text-gray-300" />
-                      <p className="font-mono text-sm font-bold text-gray-600 text-center">PDF preview is not available in this browser.</p>
+                      <p className="font-mono text-sm font-medium text-gray-600 text-center">PDF preview is not available in this browser.</p>
                     </div>
                   </object>
                 ) : (
                   <div className="w-full max-w-2xl bg-white border border-secondary rounded-xl shadow-xl flex flex-col items-center justify-center text-black min-h-[40vh] p-8">
                     <FileText className="w-24 h-24 mb-6 text-gray-300" />
-                    <p className="font-mono text-sm font-bold text-gray-600 text-center">
+                    <p className="font-mono text-sm font-medium text-gray-600 text-center">
                       Preview is available for uploaded images and PDFs. This document is stored for admin review by name and metadata.
                     </p>
                     <p className="text-sm mt-4 text-gray-500 font-mono border border-gray-200 px-4 py-2 rounded bg-gray-50 break-all">
@@ -585,11 +585,11 @@ export default function DocumentQueuePage() {
               <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-1">Approve Document</h3>
+              <h3 className="text-xl font-medium mb-1">Approve Document</h3>
               <p className="text-sm text-foreground/70 mb-6">You are approving the {approveDoc.doc.type}.</p>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-xs font-bold text-foreground/70 mb-1">ADMIN NOTES (OPTIONAL)</label>
+                  <label className="block text-xs font-medium text-foreground/70 mb-1">ADMIN NOTES (OPTIONAL)</label>
                   <textarea
                     value={approvalNotes}
                     onChange={(e) => setApprovalNotes(e.target.value)}
@@ -602,7 +602,7 @@ export default function DocumentQueuePage() {
                 <button
                   type="button"
                   onClick={() => setApproveDoc(null)}
-                  className="flex-1 py-2.5 border border-secondary rounded-xl text-sm font-bold hover:bg-secondary/50"
+                  className="flex-1 py-2.5 border border-secondary rounded-xl text-sm font-medium hover:bg-secondary/50"
                 >
                   Cancel
                 </button>
@@ -610,7 +610,7 @@ export default function DocumentQueuePage() {
                   type="button"
                   disabled={saving}
                   onClick={() => void handleApprove()}
-                  className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" /> Approve Now
                 </button>
@@ -638,11 +638,11 @@ export default function DocumentQueuePage() {
               <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mb-4">
                 <XCircle className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold mb-1 text-red-500">Reject Document</h3>
+              <h3 className="text-xl font-medium mb-1 text-red-500">Reject Document</h3>
               <p className="text-sm text-foreground/70 mb-6">The worker will see the rejection reason and can upload again.</p>
               <div className="space-y-4 mb-6">
                 <div>
-                  <label className="block text-xs font-bold text-red-500 mb-1">REJECTION REASON (MANDATORY)</label>
+                  <label className="block text-xs font-medium text-red-500 mb-1">REJECTION REASON (MANDATORY)</label>
                   <textarea
                     value={rejectionReason}
                     onChange={(e) => setRejectionReason(e.target.value)}
@@ -655,7 +655,7 @@ export default function DocumentQueuePage() {
                 <button
                   type="button"
                   onClick={() => setRejectDoc(null)}
-                  className="flex-1 py-2.5 border border-secondary rounded-xl text-sm font-bold hover:bg-secondary/50"
+                  className="flex-1 py-2.5 border border-secondary rounded-xl text-sm font-medium hover:bg-secondary/50"
                 >
                   Cancel
                 </button>
@@ -663,7 +663,7 @@ export default function DocumentQueuePage() {
                   type="button"
                   onClick={() => void handleReject()}
                   disabled={!rejectionReason.trim() || saving}
-                  className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   <Send className="w-4 h-4" /> Send Rejection
                 </button>

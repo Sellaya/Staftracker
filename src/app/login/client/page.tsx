@@ -57,7 +57,7 @@ export default function ClientLogin() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-primary mb-6 shadow-xl shadow-accent/20">
             <Building2 className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight mb-2">Client Portal</h1>
+          <h1 className="text-3xl font-medium tracking-tight mb-2">Client Portal</h1>
           <p className="text-foreground/50 font-medium">Sign in to post jobs and manage your venues.</p>
         </div>
 
@@ -69,7 +69,7 @@ export default function ClientLogin() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-xl flex items-center gap-3 text-sm font-bold"
+                  className="bg-red-500/10 border border-red-500/30 text-red-500 p-4 rounded-xl flex items-center gap-3 text-sm font-medium"
                 >
                   <AlertCircle className="w-5 h-5 shrink-0" />
                   {error}
@@ -78,7 +78,7 @@ export default function ClientLogin() {
             </AnimatePresence>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground/70 ml-1">Email Address</label>
+              <label className="text-sm font-medium text-foreground/70 ml-1">Email Address</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none group-focus-within:text-accent transition-colors">
                   <Mail className="w-5 h-5 text-foreground/30 group-focus-within:text-accent" />
@@ -95,7 +95,7 @@ export default function ClientLogin() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-foreground/70 ml-1">Password</label>
+              <label className="text-sm font-medium text-foreground/70 ml-1">Password</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none group-focus-within:text-accent transition-colors">
                   <Lock className="w-5 h-5 text-foreground/30 group-focus-within:text-accent" />
@@ -114,7 +114,7 @@ export default function ClientLogin() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-accent text-background py-4 rounded-2xl font-black text-lg shadow-xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:translate-y-0"
+              className="w-full bg-accent text-background py-4 rounded-2xl font-medium text-lg shadow-xl shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:translate-y-0"
             >
               {isLoading ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
@@ -128,7 +128,7 @@ export default function ClientLogin() {
           </form>
         </div>
 
-        <div className="mt-6 flex justify-center gap-4 text-xs font-bold">
+        <div className="mt-6 flex justify-center gap-4 text-xs font-medium">
           <Link href="/signup/client" className="text-accent hover:underline">
             Create Client Account
           </Link>

@@ -273,12 +273,12 @@ export default function VenuesPage() {
     <div className="max-w-7xl mx-auto space-y-8 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Venue Management</h1>
+          <h1 className="text-3xl font-medium tracking-tight">Venue Management</h1>
           <p className="text-foreground/70 mt-1">{isClientUser ? "Manage your venues, setup notes, and department availability." : "Manage physical locations, instructions, and department availability."}</p>
         </div>
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
         >
           <Plus className="w-5 h-5" /> Add New Venue
         </button>
@@ -338,7 +338,7 @@ export default function VenuesPage() {
                         <MapPin className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-semibold group-hover:text-primary transition-colors">{venue.name}</p>
+                        <p className="font-medium group-hover:text-primary transition-colors">{venue.name}</p>
                         <p className="text-xs text-foreground/50">{venue.id}</p>
                       </div>
                     </div>
@@ -352,14 +352,14 @@ export default function VenuesPage() {
                     <p className="text-xs text-foreground/50 font-mono mt-0.5">{venue.gps}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                       venue.status === "Active" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                     }`}>
                       {venue.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="text-primary text-xs font-bold hover:underline">Manage</button>
+                    <button className="text-primary text-xs font-medium hover:underline">Manage</button>
                   </td>
                 </motion.tr>
               ))}
@@ -396,11 +396,11 @@ export default function VenuesPage() {
               {/* Panel Header */}
               <div className="p-6 border-b border-secondary flex justify-between items-start bg-secondary/5">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center font-medium text-primary">
                     <MapPin className="w-8 h-8" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <h2 className="text-2xl font-medium flex items-center gap-2">
                       {selectedVenue.name}
                     </h2>
                     <p className="text-foreground/50 text-sm mt-1">{selectedVenue.clientName} • {selectedVenue.id}</p>
@@ -427,24 +427,24 @@ export default function VenuesPage() {
                 {/* Location Details */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center border-b border-secondary pb-2">
-                    <h3 className="font-bold text-lg flex items-center gap-2">
+                    <h3 className="font-medium text-lg flex items-center gap-2">
                       <Map className="w-5 h-5 text-primary" /> Location Configuration
                     </h3>
                     {!editingLocation ? (
-                      <button onClick={startEditingLocation} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                      <button onClick={startEditingLocation} className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
                         Edit <Edit3 className="w-3 h-3"/>
                       </button>
                     ) : (
                       <div className="flex gap-2">
-                        <button onClick={() => setEditingLocation(false)} className="text-xs font-bold text-foreground/60 hover:underline">Cancel</button>
-                        <button onClick={saveLocation} className="text-xs font-bold text-emerald-600 hover:underline">Save</button>
+                        <button onClick={() => setEditingLocation(false)} className="text-xs font-medium text-foreground/60 hover:underline">Cancel</button>
+                        <button onClick={saveLocation} className="text-xs font-medium text-emerald-600 hover:underline">Save</button>
                       </div>
                     )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-secondary/10 border border-secondary/50 rounded-xl">
-                      <p className="text-xs font-bold text-foreground/50 mb-1">STREET ADDRESS</p>
+                      <p className="text-xs font-medium text-foreground/50 mb-1">STREET ADDRESS</p>
                       {editingLocation ? (
                         <input
                           value={tempAddress}
@@ -457,7 +457,7 @@ export default function VenuesPage() {
                     </div>
                     <div className="p-4 bg-secondary/10 border border-secondary/50 rounded-xl flex justify-between items-center">
                       <div>
-                        <p className="text-xs font-bold text-foreground/50 mb-1">GPS COORDINATES</p>
+                        <p className="text-xs font-medium text-foreground/50 mb-1">GPS COORDINATES</p>
                         {editingLocation ? (
                           <input
                             value={tempGps}
@@ -476,7 +476,7 @@ export default function VenuesPage() {
 
                 {/* Departments */}
                 <div className="space-y-4">
-                  <h3 className="font-bold text-lg flex items-center gap-2 border-b border-secondary pb-2">
+                  <h3 className="font-medium text-lg flex items-center gap-2 border-b border-secondary pb-2">
                     <Users className="w-5 h-5 text-primary" /> Department Availability
                   </h3>
                   <p className="text-sm text-foreground/70 mb-4">Toggle which departments can have shifts posted at this venue.</p>
@@ -486,7 +486,7 @@ export default function VenuesPage() {
                       <button 
                         key={dept.name}
                         onClick={() => toggleDepartment(selectedVenue.id, dept.name)}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold border transition-all ${
+                        className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                           dept.active ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-secondary text-foreground/50 hover:bg-secondary/50"
                         }`}
                       >
@@ -504,7 +504,7 @@ export default function VenuesPage() {
                     />
                     <button
                       onClick={addDepartment}
-                      className="px-4 py-2 rounded-lg text-sm font-bold border border-primary text-primary hover:bg-primary/10 transition-all"
+                      className="px-4 py-2 rounded-lg text-sm font-medium border border-primary text-primary hover:bg-primary/10 transition-all"
                     >
                       + Add Dept
                     </button>
@@ -514,11 +514,11 @@ export default function VenuesPage() {
                 {/* Specific Instructions & Details */}
                 <div className="space-y-4">
                   <div className="flex justify-between items-center border-b border-secondary pb-2">
-                    <h3 className="font-bold text-lg flex items-center gap-2">
+                    <h3 className="font-medium text-lg flex items-center gap-2">
                       <Info className="w-5 h-5 text-primary" /> Worker Instructions
                     </h3>
                     {!editingNotes && (
-                      <button onClick={startEditingNotes} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                      <button onClick={startEditingNotes} className="text-xs font-medium text-primary hover:underline flex items-center gap-1">
                         Edit Notes <Edit3 className="w-3 h-3"/>
                       </button>
                     )}
@@ -527,7 +527,7 @@ export default function VenuesPage() {
                   {editingNotes ? (
                     <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                       <div>
-                        <label className="block text-xs font-bold text-foreground/70 mb-1">ARRIVAL INSTRUCTIONS</label>
+                        <label className="block text-xs font-medium text-foreground/70 mb-1">ARRIVAL INSTRUCTIONS</label>
                         <textarea 
                           value={tempInstructions}
                           onChange={e => setTempInstructions(e.target.value)}
@@ -535,7 +535,7 @@ export default function VenuesPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-foreground/70 mb-1">DRESS CODE</label>
+                        <label className="block text-xs font-medium text-foreground/70 mb-1">DRESS CODE</label>
                         <textarea 
                           value={tempDressCode}
                           onChange={e => setTempDressCode(e.target.value)}
@@ -543,7 +543,7 @@ export default function VenuesPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-foreground/70 mb-1">PARKING INFO</label>
+                        <label className="block text-xs font-medium text-foreground/70 mb-1">PARKING INFO</label>
                         <textarea 
                           value={tempParking}
                           onChange={e => setTempParking(e.target.value)}
@@ -551,14 +551,14 @@ export default function VenuesPage() {
                         />
                       </div>
                       <div className="flex gap-3 justify-end pt-2">
-                        <button onClick={() => setEditingNotes(false)} className="px-4 py-2 border border-secondary rounded-lg text-sm font-bold hover:bg-secondary/50">Cancel</button>
-                        <button onClick={saveNotes} className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors">Save Instructions</button>
+                        <button onClick={() => setEditingNotes(false)} className="px-4 py-2 border border-secondary rounded-lg text-sm font-medium hover:bg-secondary/50">Cancel</button>
+                        <button onClick={saveNotes} className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-colors">Save Instructions</button>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/50">
-                        <p className="text-xs font-bold text-foreground/50 mb-2 flex items-center gap-1">
+                        <p className="text-xs font-medium text-foreground/50 mb-2 flex items-center gap-1">
                           <MapPin className="w-3 h-3"/> ARRIVAL INSTRUCTIONS
                         </p>
                         <p className="text-sm">{selectedVenue.instructions || "None specified."}</p>
@@ -566,11 +566,11 @@ export default function VenuesPage() {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/50">
-                          <p className="text-xs font-bold text-foreground/50 mb-2">DRESS CODE</p>
+                          <p className="text-xs font-medium text-foreground/50 mb-2">DRESS CODE</p>
                           <p className="text-sm">{selectedVenue.dressCode || "None specified."}</p>
                         </div>
                         <div className="p-4 rounded-xl bg-secondary/10 border border-secondary/50">
-                          <p className="text-xs font-bold text-foreground/50 mb-2 flex items-center gap-1">
+                          <p className="text-xs font-medium text-foreground/50 mb-2 flex items-center gap-1">
                             <Car className="w-3 h-3"/> PARKING INFO
                           </p>
                           <p className="text-sm">{selectedVenue.parkingInfo || "None specified."}</p>
@@ -580,7 +580,7 @@ export default function VenuesPage() {
                   )}
                 </div>
                 {panelError && (
-                  <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-bold">
+                  <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 text-sm font-medium">
                     {panelError}
                   </div>
                 )}
@@ -598,16 +598,16 @@ export default function VenuesPage() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsAddModalOpen(false)} className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-background border border-secondary shadow-2xl rounded-3xl z-[70] overflow-hidden">
               <div className="p-6 border-b border-secondary flex justify-between items-center bg-secondary/5">
-                <h2 className="text-xl font-bold flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> Register New Venue</h2>
+                <h2 className="text-xl font-medium flex items-center gap-2"><Plus className="w-5 h-5 text-primary" /> Register New Venue</h2>
                 <button onClick={() => setIsAddModalOpen(false)} className="p-2 hover:bg-secondary rounded-full transition-colors"><X className="w-5 h-5" /></button>
               </div>
               <form onSubmit={handleAddVenue} className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">VENUE NAME</label>
+                  <label className="text-xs font-medium text-foreground/70">VENUE NAME</label>
                   <input required type="text" value={newVenueData.name} onChange={e => setNewVenueData({...newVenueData, name: e.target.value})} placeholder="e.g. Downtown Flagship" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">ASSOCIATED CLIENT</label>
+                  <label className="text-xs font-medium text-foreground/70">ASSOCIATED CLIENT</label>
                   <select required disabled={isClientUser} value={newVenueData.clientId} onChange={e => setNewVenueData({...newVenueData, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors disabled:opacity-60">
                     <option value="">Select a Client...</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -615,16 +615,16 @@ export default function VenuesPage() {
                   {isClientUser && <p className="text-[11px] text-foreground/50">Locked to your client account.</p>}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">STREET ADDRESS</label>
+                  <label className="text-xs font-medium text-foreground/70">STREET ADDRESS</label>
                   <input required type="text" value={newVenueData.address} onChange={e => setNewVenueData({...newVenueData, address: e.target.value})} placeholder="Full address..." className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">GPS COORDINATES (Optional)</label>
+                  <label className="text-xs font-medium text-foreground/70">GPS COORDINATES (Optional)</label>
                   <input type="text" value={newVenueData.gps} onChange={e => setNewVenueData({...newVenueData, gps: e.target.value})} placeholder="43.64, -79.39" className="w-full px-4 py-2.5 bg-secondary/10 border border-secondary rounded-xl focus:outline-none focus:border-primary transition-colors" />
                 </div>
                 <div className="pt-4 flex gap-3">
-                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 border border-secondary rounded-xl font-bold hover:bg-secondary/50 transition-colors">Cancel</button>
-                  <button type="submit" disabled={isAdding} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+                  <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 border border-secondary rounded-xl font-medium hover:bg-secondary/50 transition-colors">Cancel</button>
+                  <button type="submit" disabled={isAdding} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
                     {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4" /> Register Venue</>}
                   </button>
                 </div>

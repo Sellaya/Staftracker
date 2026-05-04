@@ -140,7 +140,7 @@ export default function WorkerEarnings() {
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Earnings & Timesheets</h1>
+          <h1 className="text-3xl font-medium tracking-tight">Earnings & Timesheets</h1>
           <p className="text-foreground/70 mt-1">
             Gross pay from completed shifts (hours × rate). Payouts follow your payment status on each shift.
           </p>
@@ -149,7 +149,7 @@ export default function WorkerEarnings() {
           type="button"
           onClick={exportCsv}
           disabled={earningsHistory.length === 0}
-          className="px-4 py-2 bg-secondary text-foreground rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-secondary/80 transition-colors disabled:opacity-40"
+          className="px-4 py-2 bg-secondary text-foreground rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-secondary/80 transition-colors disabled:opacity-40"
         >
           <Download className="w-4 h-4" /> Export CSV
         </button>
@@ -157,14 +157,14 @@ export default function WorkerEarnings() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-primary/5 border border-emerald-500/20 col-span-1 md:col-span-2 flex flex-col justify-center">
-          <p className="text-sm font-bold text-emerald-500 mb-1">Marked paid (platform)</p>
+          <p className="text-sm font-medium text-emerald-500 mb-1">Marked paid (platform)</p>
           <div className="flex items-end gap-4 flex-wrap">
-            <h2 className="text-5xl font-black text-foreground">${paidTotal.toFixed(2)}</h2>
+            <h2 className="text-5xl font-medium text-foreground">${paidTotal.toFixed(2)}</h2>
             <button
               type="button"
               disabled
               title="Bank transfers are not wired in this MVP"
-              className="mb-1 px-6 py-2 bg-emerald-500/40 text-white rounded-full font-bold cursor-not-allowed opacity-70"
+              className="mb-1 px-6 py-2 bg-emerald-500/40 text-white rounded-full font-medium cursor-not-allowed opacity-70"
             >
               Transfer to Bank
             </button>
@@ -173,16 +173,16 @@ export default function WorkerEarnings() {
         </div>
 
         <div className="p-6 rounded-3xl bg-secondary/10 border border-secondary flex flex-col justify-center">
-          <p className="text-sm font-bold text-foreground/50 mb-1">Lifetime gross (completed)</p>
-          <h2 className="text-3xl font-black text-foreground mb-2">{displayLifetime}</h2>
-          <p className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+          <p className="text-sm font-medium text-foreground/50 mb-1">Lifetime gross (completed)</p>
+          <h2 className="text-3xl font-medium text-foreground mb-2">{displayLifetime}</h2>
+          <p className="text-xs font-medium text-emerald-500 flex items-center gap-1">
             <ArrowUpRight className="w-3 h-3" /> From your shift history
           </p>
         </div>
       </div>
 
       <div>
-        <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-medium mb-4 flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-primary" /> Completed shifts
         </h3>
         <div className="glass rounded-2xl bg-background/50 border border-secondary overflow-hidden">
@@ -213,7 +213,7 @@ export default function WorkerEarnings() {
                       className="border-b border-secondary/20 hover:bg-secondary/10 transition-colors group"
                     >
                       <td className="px-6 py-4">
-                        <p className="font-bold">{item.date}</p>
+                        <p className="font-medium">{item.date}</p>
                         <p className="text-xs text-foreground/50">{item.venue}</p>
                       </td>
                       <td className="px-6 py-4">
@@ -221,10 +221,10 @@ export default function WorkerEarnings() {
                         <p className="text-xs text-foreground/50">{item.hours} hrs × rate</p>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <p className="font-black text-emerald-500 text-lg">${item.pay.toFixed(2)}</p>
+                        <p className="font-medium text-emerald-500 text-lg">${item.pay.toFixed(2)}</p>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded text-xs font-bold border border-emerald-500/20 max-w-[14rem] inline-block truncate">
+                        <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 rounded text-xs font-medium border border-emerald-500/20 max-w-[14rem] inline-block truncate">
                           {item.status}
                         </span>
                       </td>

@@ -237,7 +237,7 @@ export default function WorkerOpenShifts() {
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Open Shifts Hub</h1>
+          <h1 className="text-3xl font-medium tracking-tight">Open Shifts Hub</h1>
           <p className="text-foreground/70 mt-1">Browse open posts, review site details, then apply. Admin confirms the official assignment.</p>
         </div>
       </div>
@@ -249,25 +249,25 @@ export default function WorkerOpenShifts() {
       )}
       {profileIncompleteReason && (
         <div className="p-4 border border-amber-500/30 bg-amber-500/10 rounded-xl flex items-start justify-between gap-4">
-          <div className="text-sm text-amber-600 font-semibold flex items-start gap-2">
+          <div className="text-sm text-amber-600 font-medium flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5" />
             <span>{profileIncompleteReason}</span>
           </div>
           <Link
             href="/worker/profile"
-            className="text-xs font-bold text-amber-700 underline whitespace-nowrap"
+            className="text-xs font-medium text-amber-700 underline whitespace-nowrap"
           >
             Complete Profile
           </Link>
         </div>
       )}
       {applySuccess && (
-        <div className="p-3 border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 rounded-xl text-sm font-bold">
+        <div className="p-3 border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 rounded-xl text-sm font-medium">
           {applySuccess}
         </div>
       )}
       {applyError && (
-        <div className="p-3 border border-red-500/30 bg-red-500/10 text-red-600 rounded-xl text-sm font-bold">
+        <div className="p-3 border border-red-500/30 bg-red-500/10 text-red-600 rounded-xl text-sm font-medium">
           {applyError}
         </div>
       )}
@@ -332,23 +332,23 @@ export default function WorkerOpenShifts() {
                         <Briefcase className="w-5 h-5" />
                       </div>
                       {shift.urgent && !inReview(shift) && (
-                        <span className="px-2 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-wider rounded border border-amber-500/20">
+                        <span className="px-2 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-medium uppercase tracking-wider rounded border border-amber-500/20">
                           Urgent
                         </span>
                       )}
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-black text-emerald-500">
+                      <p className="text-2xl font-medium text-emerald-500">
                         ${shift.rate}
-                        <span className="text-sm font-bold text-foreground/50">/hr</span>
+                        <span className="text-sm font-medium text-foreground/50">/hr</span>
                       </p>
-                      <p className="text-xs font-bold text-foreground/50">
+                      <p className="text-xs font-medium text-foreground/50">
                         Est. ${(shift.rate * shift.hours).toFixed(2)}
                       </p>
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold mb-1">{shift.role}</h3>
+                  <h3 className="text-xl font-medium mb-1">{shift.role}</h3>
                   <p className="text-sm text-foreground/70 font-medium mb-4">{shift.venue}</p>
 
                   <div className="space-y-2 mb-6">
@@ -366,14 +366,14 @@ export default function WorkerOpenShifts() {
 
                 {shift.myAppStatus === "pending_admin" && (
                   <div className="space-y-2">
-                    <div className="w-full py-3 bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/25 rounded-xl font-bold flex items-center justify-center gap-2 text-sm text-center px-2">
+                    <div className="w-full py-3 bg-amber-500/10 text-amber-800 dark:text-amber-200 border border-amber-500/25 rounded-xl font-medium flex items-center justify-center gap-2 text-sm text-center px-2">
                       <Clock className="w-4 h-4 shrink-0" /> Awaiting admin confirmation
                     </div>
                     <button
                       type="button"
                       disabled={withdrawBusyId === shift.id}
                       onClick={() => handleWithdraw(shift.id)}
-                      className="w-full py-2.5 border border-secondary text-sm font-bold rounded-xl hover:bg-secondary/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      className="w-full py-2.5 border border-secondary text-sm font-medium rounded-xl hover:bg-secondary/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {withdrawBusyId === shift.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -385,7 +385,7 @@ export default function WorkerOpenShifts() {
 
                 {shift.myAppStatus === "rejected" && (
                   <div className="space-y-2">
-                    <div className="w-full py-3 bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/20 rounded-xl text-sm font-semibold text-center px-2">
+                    <div className="w-full py-3 bg-red-500/10 text-red-700 dark:text-red-300 border border-red-500/20 rounded-xl text-sm font-medium text-center px-2">
                       Not selected for this shift.
                       {shift.rejectionReason ? (
                         <span className="block text-xs font-normal mt-1 opacity-90">{shift.rejectionReason}</span>
@@ -394,7 +394,7 @@ export default function WorkerOpenShifts() {
                     <button
                       type="button"
                       onClick={() => setPreviewShift(shift)}
-                      className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                     >
                       Review &amp; apply again <ChevronRight className="w-4 h-4" />
                     </button>
@@ -409,7 +409,7 @@ export default function WorkerOpenShifts() {
                     <button
                       type="button"
                       onClick={() => setPreviewShift(shift)}
-                      className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
+                      className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all flex items-center justify-center gap-2"
                     >
                       Review &amp; apply again <ChevronRight className="w-4 h-4" />
                     </button>
@@ -420,7 +420,7 @@ export default function WorkerOpenShifts() {
                   <button
                     type="button"
                     onClick={() => setPreviewShift(shift)}
-                    className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                   >
                     Review details &amp; apply <ChevronRight className="w-4 h-4" />
                   </button>
@@ -461,8 +461,8 @@ export default function WorkerOpenShifts() {
             >
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Before you apply</p>
-                  <h2 className="text-xl font-bold mt-1">{previewShift.role}</h2>
+                  <p className="text-[10px] font-medium uppercase tracking-widest text-primary">Before you apply</p>
+                  <h2 className="text-xl font-medium mt-1">{previewShift.role}</h2>
                   <p className="text-sm text-foreground/60 mt-0.5">{previewShift.venue}</p>
                 </div>
                 <button
@@ -481,7 +481,7 @@ export default function WorkerOpenShifts() {
                   <CalendarDays className="w-4 h-4 shrink-0" />
                   {previewShift.date} · {previewShift.time}
                 </div>
-                <div className="flex items-center gap-2 text-emerald-600 font-black">
+                <div className="flex items-center gap-2 text-emerald-600 font-medium">
                   <DollarSign className="w-4 h-4" /> ${previewShift.rate}/hr · {previewShift.hours} hrs
                 </div>
               </div>
@@ -490,21 +490,21 @@ export default function WorkerOpenShifts() {
                 <div className="p-3 rounded-xl border border-secondary bg-secondary/5 flex gap-3">
                   <Navigation className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[10px] font-bold text-foreground/50 uppercase">Arrival instructions</p>
+                    <p className="text-[10px] font-medium text-foreground/50 uppercase">Arrival instructions</p>
                     <p className="text-sm mt-1">{previewShift.instructions || "Client did not add extra instructions."}</p>
                   </div>
                 </div>
                 <div className="p-3 rounded-xl border border-secondary bg-secondary/5 flex gap-3">
                   <Shirt className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[10px] font-bold text-foreground/50 uppercase">Uniform</p>
+                    <p className="text-[10px] font-medium text-foreground/50 uppercase">Uniform</p>
                     <p className="text-sm mt-1">{previewShift.uniform || "Standard venue dress code."}</p>
                   </div>
                 </div>
                 <div className="p-3 rounded-xl border border-secondary bg-secondary/5 flex gap-3">
                   <Car className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-[10px] font-bold text-foreground/50 uppercase">Parking</p>
+                    <p className="text-[10px] font-medium text-foreground/50 uppercase">Parking</p>
                     <p className="text-sm mt-1">{previewShift.parking || "Not specified — confirm with site lead if needed."}</p>
                   </div>
                 </div>
@@ -520,7 +520,7 @@ export default function WorkerOpenShifts() {
                   type="button"
                   disabled={applySubmitting}
                   onClick={() => setPreviewShift(null)}
-                  className="flex-1 py-3 border border-secondary rounded-xl font-bold text-sm hover:bg-secondary/30 transition-colors disabled:opacity-50"
+                  className="flex-1 py-3 border border-secondary rounded-xl font-medium text-sm hover:bg-secondary/30 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -528,7 +528,7 @@ export default function WorkerOpenShifts() {
                   type="button"
                   disabled={applySubmitting}
                   onClick={() => submitApplication(previewShift.id)}
-                  className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-medium text-sm hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {applySubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   Submit application

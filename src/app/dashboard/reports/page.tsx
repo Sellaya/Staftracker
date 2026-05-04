@@ -148,12 +148,12 @@ export default function ReportsPage() {
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Platform Reports</h1>
+          <h1 className="text-3xl font-medium tracking-tight">Platform Reports</h1>
           <p className="text-foreground/70 mt-1">Analytics from live jobs, shifts, invoices, and timesheets.</p>
         </div>
         <button
           onClick={handleExportCSV}
-          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
         >
           <Download className="w-4 h-4" /> Export CSV
         </button>
@@ -175,7 +175,7 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{report.value}</span>
+              <span className="text-3xl font-medium">{report.value}</span>
             </div>
             <p className={`text-xs font-medium mt-2 text-foreground/60`}>{report.sub}</p>
           </motion.div>
@@ -189,7 +189,7 @@ export default function ReportsPage() {
           transition={{ duration: 0.4, delay: 0.3 }}
           className="p-6 rounded-2xl glass bg-background/50 border border-secondary min-h-[400px]"
         >
-          <h3 className="text-lg font-bold mb-4">Completed shifts by month (YYYY-MM)</h3>
+          <h3 className="text-lg font-medium mb-4">Completed shifts by month (YYYY-MM)</h3>
           {monthlyShiftBuckets.length === 0 ? (
             <p className="text-sm text-foreground/50 py-16 text-center">No dated shifts yet.</p>
           ) : (
@@ -203,7 +203,7 @@ export default function ReportsPage() {
                     className="w-full bg-primary/30 hover:bg-primary/50 transition-colors rounded-t-sm min-h-[8px]"
                     title={`${month}: ${count}`}
                   />
-                  <span className="text-[10px] font-bold text-foreground/50 truncate w-full text-center">{month.slice(5)}</span>
+                  <span className="text-[10px] font-medium text-foreground/50 truncate w-full text-center">{month.slice(5)}</span>
                 </div>
               ))}
             </div>
@@ -219,7 +219,7 @@ export default function ReportsPage() {
           transition={{ duration: 0.4, delay: 0.4 }}
           className="p-6 rounded-2xl glass bg-background/50 border border-secondary"
         >
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" /> Most requested roles
           </h3>
           <div className="space-y-4">
@@ -228,7 +228,7 @@ export default function ReportsPage() {
                 <div key={i} className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{stat.role}</span>
-                    <span className="font-bold text-primary">{stat.percentage}%</span>
+                    <span className="font-medium text-primary">{stat.percentage}%</span>
                   </div>
                   <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
                     <motion.div

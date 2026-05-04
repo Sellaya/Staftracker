@@ -193,7 +193,7 @@ export default function WorkerProfile() {
       
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
+          <h1 className="text-3xl font-medium tracking-tight">My Profile</h1>
           <p className="text-foreground/70 mt-1">Manage your personal information and legal documents.</p>
         </div>
       </div>
@@ -203,13 +203,13 @@ export default function WorkerProfile() {
         {/* Personal Info */}
         <div className="md:col-span-1 space-y-6">
           <div className="p-6 rounded-3xl border border-secondary bg-background/50 glass flex flex-col items-center text-center">
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-3xl mb-4 border border-primary/20">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center font-medium text-primary text-3xl mb-4 border border-primary/20">
               {worker ? `${worker.firstName?.charAt(0) || ""}${worker.lastName?.charAt(0) || ""}` : "JD"}
             </div>
-            <h2 className="text-xl font-bold">{worker ? `${worker.firstName || ""} ${worker.lastName || ""}`.trim() || worker.name : "John Doe"}</h2>
+            <h2 className="text-xl font-medium">{worker ? `${worker.firstName || ""} ${worker.lastName || ""}`.trim() || worker.name : "John Doe"}</h2>
             <p className="text-sm text-foreground/50 font-mono mb-4">ID: {worker ? worker.id : "W-1005"}</p>
             
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${
               isClearedForWork
                 ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                 : "bg-amber-500/10 text-amber-500 border-amber-500/20"
@@ -221,39 +221,39 @@ export default function WorkerProfile() {
 
           <div className="p-6 rounded-3xl border border-secondary bg-background/50 glass space-y-4">
             <div>
-              <label className="text-xs font-bold text-foreground/50">ACCOUNT STATUS</label>
+              <label className="text-xs font-medium text-foreground/50">ACCOUNT STATUS</label>
               <p className="font-medium">{accountStatus}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">DOCUMENT STATUS</label>
+              <label className="text-xs font-medium text-foreground/50">DOCUMENT STATUS</label>
               <p className="font-medium">{documentStatus}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">EMAIL</label>
+              <label className="text-xs font-medium text-foreground/50">EMAIL</label>
               <p className="font-medium">{worker?.email || "Not provided"}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">PHONE</label>
+              <label className="text-xs font-medium text-foreground/50">PHONE</label>
               <p className="font-medium">{worker?.phone || "Not provided"}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">ADDRESS</label>
+              <label className="text-xs font-medium text-foreground/50">ADDRESS</label>
               <p className="font-medium">{worker?.address || "Not provided"}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">LEGAL STATUS</label>
+              <label className="text-xs font-medium text-foreground/50">LEGAL STATUS</label>
               <p className="font-medium">{worker?.legalStatus || "Not provided"}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">ROLES</label>
+              <label className="text-xs font-medium text-foreground/50">ROLES</label>
               <p className="font-medium">{worker?.roles?.length ? worker.roles.join(", ") : "Not provided"}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">SERVICE AREAS</label>
+              <label className="text-xs font-medium text-foreground/50">SERVICE AREAS</label>
               <p className="font-medium">{worker?.neighborhoods?.length ? worker.neighborhoods.join(", ") : "Not provided"}</p>
             </div>
             <div>
-              <label className="text-xs font-bold text-foreground/50">BIO</label>
+              <label className="text-xs font-medium text-foreground/50">BIO</label>
               <p className="font-medium">{worker?.bio || "Not provided"}</p>
             </div>
             <p className="text-xs text-foreground/50 mt-2">Profile details can be updated by company admin.</p>
@@ -264,20 +264,20 @@ export default function WorkerProfile() {
         <div className="md:col-span-2 space-y-6">
           
           <div className="p-6 rounded-3xl border border-amber-500/30 bg-amber-500/5">
-            <h3 className="text-lg font-bold text-amber-500 flex items-center gap-2 mb-2">
+            <h3 className="text-lg font-medium text-amber-500 flex items-center gap-2 mb-2">
               <AlertCircle className="w-5 h-5" /> Required Documents Checklist
             </h3>
             {missingDocs.length > 0 ? (
               <div className="mb-4">
                 <p className="text-sm text-foreground/70 mb-3">Please upload the missing documents below:</p>
-                <ul className="space-y-1 text-sm font-semibold text-amber-500">
+                <ul className="space-y-1 text-sm font-medium text-amber-500">
                   {missingDocs.map((missing) => (
                     <li key={missing}>- {missing}</li>
                   ))}
                 </ul>
               </div>
             ) : (
-              <p className="text-sm text-emerald-600 font-semibold mb-4">All required documents are uploaded. You can still upload additional files.</p>
+              <p className="text-sm text-emerald-600 font-medium mb-4">All required documents are uploaded. You can still upload additional files.</p>
             )}
 
             <div className="space-y-3">
@@ -307,7 +307,7 @@ export default function WorkerProfile() {
                 <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
                   <UploadCloud className="w-6 h-6 text-amber-500" />
                 </div>
-                <label className="font-bold text-amber-500 cursor-pointer">
+                <label className="font-medium text-amber-500 cursor-pointer">
                   Choose Document(s)
                   <input
                     ref={fileInputRef}
@@ -331,12 +331,12 @@ export default function WorkerProfile() {
               </div>
 
               {uploadSuccess && (
-                <div className="w-full py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 rounded-xl font-bold text-center">
+                <div className="w-full py-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 rounded-xl font-medium text-center">
                   {uploadSuccess}
                 </div>
               )}
               {uploadError && (
-                <div className="w-full py-3 bg-red-500/10 border border-red-500/30 text-red-500 rounded-xl font-bold text-center">
+                <div className="w-full py-3 bg-red-500/10 border border-red-500/30 text-red-500 rounded-xl font-medium text-center">
                   {uploadError}
                 </div>
               )}
@@ -344,7 +344,7 @@ export default function WorkerProfile() {
               <button
                 onClick={handleUpload}
                 disabled={isSubmitDisabled}
-                className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUploading ? "Uploading..." : "Submit Document"}
               </button>
@@ -352,7 +352,7 @@ export default function WorkerProfile() {
           </div>
 
           <div className="p-6 rounded-3xl border border-secondary bg-background/50 glass">
-            <h3 className="text-lg font-bold mb-4">My Documents</h3>
+            <h3 className="text-lg font-medium mb-4">My Documents</h3>
             <div className="space-y-4">
               {documents.length === 0 ? (
                 <p className="text-sm text-foreground/50 italic">No documents uploaded yet.</p>
@@ -364,12 +364,12 @@ export default function WorkerProfile() {
                         <FileText className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="font-bold">{doc.type}</p>
+                        <p className="font-medium">{doc.type}</p>
                         <p className="text-xs text-foreground/50">{doc.fileName}</p>
                         <p className="text-xs text-foreground/50">Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-bold border ${
+                    <span className={`px-2 py-1 rounded text-xs font-medium border ${
                       doc.status === "Approved"
                         ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                         : doc.status === "Rejected"
@@ -399,15 +399,15 @@ export default function WorkerProfile() {
       {pendingDeleteDoc && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-md rounded-2xl border border-secondary bg-card p-6 space-y-4">
-            <h4 className="text-lg font-bold">Confirm deletion</h4>
+            <h4 className="text-lg font-medium">Confirm deletion</h4>
             <p className="text-sm text-foreground/70">
-              Delete <span className="font-bold">{pendingDeleteDoc.fileName}</span> from your account?
+              Delete <span className="font-medium">{pendingDeleteDoc.fileName}</span> from your account?
             </p>
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setPendingDeleteDoc(null)}
-                className="px-4 py-2 border border-secondary rounded-lg font-bold hover:bg-secondary/50"
+                className="px-4 py-2 border border-secondary rounded-lg font-medium hover:bg-secondary/50"
               >
                 No
               </button>
@@ -417,7 +417,7 @@ export default function WorkerProfile() {
                   await handleDeleteDocument(pendingDeleteDoc.id);
                   setPendingDeleteDoc(null);
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
               >
                 Yes, delete
               </button>

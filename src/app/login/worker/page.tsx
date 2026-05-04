@@ -51,7 +51,7 @@ export default function WorkerLogin() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/20 border border-primary/30 mb-4 text-primary">
             <Briefcase size={32} />
           </div>
-          <h1 className="text-3xl font-black tracking-tight mb-2">Worker Portal</h1>
+          <h1 className="text-3xl font-medium tracking-tight mb-2">Worker Portal</h1>
           <p className="text-foreground/60">View your schedule, clock in, and track earnings.</p>
         </motion.div>
 
@@ -63,7 +63,7 @@ export default function WorkerLogin() {
         >
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-foreground/50 uppercase tracking-widest ml-1">Work Email</label>
+              <label className="text-xs font-medium text-foreground/50 uppercase tracking-widest ml-1">Work Email</label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/30 group-focus-within:text-primary transition-colors">
                   <User size={18} />
@@ -81,8 +81,8 @@ export default function WorkerLogin() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center ml-1">
-                <label className="text-xs font-bold text-foreground/50 uppercase tracking-widest">Password</label>
-                <button type="button" className="text-xs font-bold text-primary hover:underline">Forgot?</button>
+                <label className="text-xs font-medium text-foreground/50 uppercase tracking-widest">Password</label>
+                <button type="button" className="text-xs font-medium text-primary hover:underline">Forgot?</button>
               </div>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/30 group-focus-within:text-primary transition-colors">
@@ -102,7 +102,7 @@ export default function WorkerLogin() {
             <button 
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black py-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group transition-all disabled:opacity-50"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-4 rounded-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group transition-all disabled:opacity-50"
             >
               {isLoading ? "Authenticating..." : "Access My Shifts"}
               {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
@@ -110,10 +110,10 @@ export default function WorkerLogin() {
 
             <div className="relative py-4">
               <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-secondary"></div></div>
-              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-foreground/40 font-bold tracking-widest">New to StaffTracker?</span></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-foreground/40 font-medium tracking-widest">New to StaffTracker?</span></div>
             </div>
 
-            <Link href="/signup/worker" className="w-full bg-secondary/20 hover:bg-secondary/30 text-foreground font-bold py-4 rounded-2xl border border-secondary transition-all block text-center">
+            <Link href="/signup/worker" className="w-full bg-secondary/20 hover:bg-secondary/30 text-foreground font-medium py-4 rounded-2xl border border-secondary transition-all block text-center">
               Apply to Join the Team
             </Link>
           </form>
@@ -122,15 +122,15 @@ export default function WorkerLogin() {
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <div className="flex justify-center text-primary mb-1"><Star size={16} /></div>
-            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">Top Rated</p>
+            <p className="text-[10px] font-medium text-foreground/40 uppercase tracking-tighter">Top Rated</p>
           </div>
           <div className="space-y-1">
             <div className="flex justify-center text-primary mb-1"><ShieldCheck size={16} /></div>
-            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">Vetted</p>
+            <p className="text-[10px] font-medium text-foreground/40 uppercase tracking-tighter">Vetted</p>
           </div>
           <div className="space-y-1">
             <div className="flex justify-center text-primary mb-1"><Briefcase size={16} /></div>
-            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-tighter">Fast Pay</p>
+            <p className="text-[10px] font-medium text-foreground/40 uppercase tracking-tighter">Fast Pay</p>
           </div>
         </div>
 

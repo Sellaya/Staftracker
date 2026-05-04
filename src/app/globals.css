@@ -1,25 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f7fb;
-  --foreground: #172033;
-  --primary: #0f62fe;
+  /* Staff Tracker workspace tokens — light SaaS workspace */
+  --background: #f7f8fa;
+  --foreground: #111827;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #e9edf5;
-  --secondary-foreground: #26344d;
-  --accent: #00c875;
+  --secondary: #e8edf5;
+  --secondary-foreground: #25324a;
+  --accent: #16a34a;
   --accent-foreground: #ffffff;
   --card: #ffffff;
-  --card-foreground: #172033;
-  --muted: #f1f3f8;
-  --muted-foreground: #637089;
-  --border: #e1e5ee;
-  --warning: #ffcb00;
-  --danger: #e2445c;
-  --info: #579bfc;
-  --sidebar: #1f2a44;
+  --card-foreground: #111827;
+  --surface: #f6f7fb;
+  --surface-raised: #fafafc;
+  --muted: #f1f3f7;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+  --ring: rgba(37, 99, 235, 0.16);
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --info: #0284c7;
+  --accent-purple: #7c3aed;
+  --sidebar: #0f172a;
   --sidebar-foreground: #eef4ff;
-  --font-geist-sans: ui-sans-serif, system-ui, sans-serif;
+  /* --font-app set on <html> by next/font (Plus Jakarta Sans) */
   --font-geist-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -37,7 +42,7 @@
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-app), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
@@ -52,9 +57,12 @@
     --accent: #00c875;
     --card: #172033;
     --card-foreground: #f8fafc;
+    --surface: #111827;
+    --surface-raised: #172033;
     --muted: #1f2a44;
     --muted-foreground: #aab4c7;
     --border: #2f3b55;
+    --ring: rgba(87, 155, 252, 0.18);
     --sidebar: #111827;
     --sidebar-foreground: #eef4ff;
   }
@@ -70,11 +78,25 @@ html {
 
 body {
   min-width: 320px;
-  background: var(--background);
+  background:
+    linear-gradient(180deg, #ffffff 0, #f8fafc 250px, var(--background) 100%);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.006em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:where(h1, h2, h3) {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+:where(h4, h5, h6) {
+  font-weight: 500;
+  letter-spacing: -0.01em;
 }
 
 ::selection {
@@ -87,18 +109,25 @@ table {
 }
 
 .glass {
-  background: var(--card);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   border: 1px solid var(--border);
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 34px rgba(15, 23, 42, 0.04);
 }
 
 .saas-card {
-  background: var(--card);
+  background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 36px rgba(15, 23, 42, 0.035);
+}
+
+.workspace-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035), 0 12px 30px rgba(15, 23, 42, 0.03);
 }
 
 .saas-chip {
@@ -110,13 +139,119 @@ table {
   background: var(--muted);
   color: var(--muted-foreground);
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 500;
   line-height: 1;
   padding: 0.35rem 0.55rem;
 }
 
 .workflow-lane {
   border-left: 3px solid var(--primary);
+}
+
+.premium-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(251, 252, 254, 0.98)),
+    var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 44px rgba(15, 23, 42, 0.05);
+}
+
+.premium-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(17, 24, 39, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 24, 39, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, black, transparent 58%);
+}
+
+.command-surface {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--muted));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Landing hero — KPI strips (horizontal layout; not used on dashboard) */
+.hero-metric-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--muted) 35%, #ffffff) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 10px 28px -16px rgba(15, 23, 42, 0.12);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.hero-metric-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.35;
+  background: radial-gradient(80% 120% at 100% 0%, rgba(37, 99, 235, 0.06), transparent 52%);
+}
+
+.hero-metric-tile:hover {
+  border-color: color-mix(in srgb, var(--border) 70%, var(--primary));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 8px rgba(15, 23, 42, 0.06),
+    0 16px 36px -18px rgba(15, 23, 42, 0.14);
+  transform: translateY(-1px);
+}
+
+.metric-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 26px rgba(15, 23, 42, 0.035);
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: color-mix(in srgb, var(--primary) 76%, var(--accent));
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.35rem 0.55rem;
+}
+
+.status-pill::before {
+  content: "";
+  height: 0.45rem;
+  width: 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .mobile-safe-bottom {
@@ -145,7 +280,12 @@ table {
   input[type="reset"]
 ) {
   cursor: pointer;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    opacity 140ms ease,
+    transform 140ms ease;
 }
 
 :where(
@@ -160,6 +300,58 @@ table {
   box-shadow: none;
 }
 
+:where(a[href], button, [role="button"]):where(:focus-visible) {
+  outline: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+:where(button:not(:disabled), a[href], [role="button"]):hover {
+  transform: translateY(-1px);
+}
+
+:where(button:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+:where(button, a[href], [role="button"])[class*="hover:shadow"]:hover,
+:where(button, a[href], [role="button"])[class*="shadow-"]:hover {
+  box-shadow: none !important;
+}
+
+:where(button, a[href], [role="button"])[class*="hover:-translate"]:hover {
+  transform: translateY(-1px) !important;
+}
+
+.hero-metric-tile:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.saas-card:hover,
+.glass:hover,
+.workspace-card:hover,
+.metric-card:hover,
+.command-surface:hover {
+  border-color: color-mix(in srgb, var(--primary) 20%, var(--border));
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 18px 42px rgba(15, 23, 42, 0.055);
+}
+
+.saas-chip:hover {
+  border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  background: color-mix(in srgb, var(--primary) 7%, var(--muted));
+  color: var(--foreground);
+}
+
+tbody tr {
+  transition: background-color 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 4%, var(--card)) !important;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--primary) 72%, transparent);
+}
+
 :where(input, select, textarea) {
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -170,7 +362,7 @@ table {
 :where(input, select, textarea):focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: none;
+  box-shadow: 0 0 0 4px var(--ring);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -181,6 +373,10 @@ table {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .hero-metric-tile:hover {
+    transform: none;
   }
 }
 
@@ -200,7 +396,7 @@ table {
 
   .saas-card {
     border-radius: 10px;
-    box-shadow: none;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
 
   table {
@@ -238,5 +434,10 @@ table {
 
   table td:empty {
     display: none;
+  }
+
+  .workspace-card {
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   }
 }
