@@ -2,134 +2,143 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Briefcase, Users, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Bell, Briefcase, CalendarDays, CheckCircle2, Search, Users } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans overflow-hidden relative">
-      {/* Background Effects */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 blur-[120px] rounded-full mix-blend-screen" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/20 blur-[120px] rounded-full mix-blend-screen" />
-      </div>
-
-      {/* Navigation */}
-      <nav className="w-full px-8 py-6 flex justify-between items-center z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-black text-xl shadow-lg shadow-primary/20">
+    <div className="min-h-screen bg-background text-foreground">
+      <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 md:px-8">
+        <Link href="/" className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-black text-white shadow-sm">
             ST
           </div>
-          <span className="font-bold text-2xl tracking-tight text-foreground">Staff Tracker</span>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/login/worker" className="px-6 py-2.5 rounded-full border border-primary/50 text-primary text-sm font-bold hover:bg-primary/10 transition-colors">
-            Worker Login
+          <div>
+            <p className="text-lg font-black tracking-tight">Staff Tracker</p>
+            <p className="text-xs font-bold text-muted-foreground">Hospitality workforce OS</p>
+          </div>
+        </Link>
+        <div className="hidden items-center gap-2 md:flex">
+          <Link href="/login/worker" className="rounded-xl px-4 py-2 text-sm font-black text-muted-foreground hover:bg-muted hover:text-foreground">
+            Worker
           </Link>
-          <Link href="/login/client" className="px-6 py-2.5 rounded-full border border-accent/50 text-accent text-sm font-bold hover:bg-accent/10 transition-colors">
-            Client Login
+          <Link href="/login/client" className="rounded-xl px-4 py-2 text-sm font-black text-muted-foreground hover:bg-muted hover:text-foreground">
+            Client
           </Link>
-          <Link href="/login/admin" className="px-6 py-2.5 rounded-full border border-secondary text-sm font-bold hover:bg-secondary/50 transition-colors">
+          <Link href="/login/admin" className="rounded-xl bg-primary px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-primary/90">
             Admin Login
           </Link>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 z-10 text-center -mt-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+      <main className="mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-4 pb-10 pt-4 md:px-8 lg:grid-cols-[0.95fr_1.05fr]">
+        <motion.section
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-4xl"
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary text-sm font-bold mb-8">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Toronto&apos;s Premier Hospitality Network
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-black uppercase tracking-widest text-primary shadow-sm">
+            <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+            Monday clarity, Slack speed
           </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-tight">
-            Connect. <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Staff.</span> Succeed.
+          <h1 className="text-5xl font-black leading-[0.96] tracking-tight md:text-7xl">
+            Run every shift from one live workspace.
           </h1>
-          
-          <p className="text-lg md:text-xl text-foreground/70 mb-12 max-w-2xl mx-auto leading-relaxed">
-            The fastest, most reliable way to find verified hospitality shifts or hire elite staff in Toronto. No middleman, just seamless connections.
+          <p className="mt-6 max-w-xl text-lg font-medium leading-relaxed text-muted-foreground">
+            A clean SaaS command center for hospitality teams: post jobs, approve workers, track shifts, review documents, and close timesheets without losing context.
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            
-            {/* Worker Pathway */}
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="relative group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative h-full p-8 rounded-3xl glass bg-background/60 border border-secondary text-left flex flex-col hover:border-primary/50 transition-colors">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                  <Users className="w-7 h-7" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2">I am a Worker</h3>
-                <p className="text-foreground/70 mb-8 flex-1">
-                  Find high-paying shifts across Toronto. Set your own schedule, get verified, and get paid fast.
-                </p>
-                <Link href="/signup/worker" className="flex items-center justify-between w-full px-6 py-4 bg-primary text-primary-foreground rounded-2xl font-bold hover:shadow-lg hover:shadow-primary/30 transition-all">
-                  Apply for Shifts <ArrowRight className="w-5 h-5" />
-                </Link>
-              </div>
-            </motion.div>
-
-            {/* Client Pathway */}
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="relative group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-bl from-accent/20 to-transparent rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative h-full p-8 rounded-3xl glass bg-background/60 border border-secondary text-left flex flex-col hover:border-accent/50 transition-colors">
-                <div className="w-14 h-14 rounded-2xl bg-accent/10 text-accent flex items-center justify-center mb-6">
-                  <Briefcase className="w-7 h-7" />
-                </div>
-                <h3 className="text-2xl font-bold mb-2">I am a Venue</h3>
-                <p className="text-foreground/70 mb-8 flex-1">
-                  Instantly access Toronto&apos;s largest pool of verified, pre-screened hospitality professionals.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Link href="/signup/client" className="flex items-center justify-between w-full px-6 py-4 bg-secondary text-foreground rounded-2xl font-bold hover:bg-secondary/80 transition-all border border-secondary/50 hover:border-accent">
-                    Register Venue <ArrowRight className="w-5 h-5" />
-                  </Link>
-                  <Link href="/login/client" className="flex items-center justify-between w-full px-6 py-4 bg-accent/10 text-accent rounded-2xl font-bold transition-all border border-accent/40 hover:bg-accent/20">
-                    Client Login <ArrowRight className="w-5 h-5" />
-                  </Link>
-                </div>
-              </div>
-            </motion.div>
-
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link href="/signup/client" className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black text-white shadow-sm hover:bg-primary/90">
+              Create client workspace <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link href="/signup/worker" className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-black hover:bg-muted">
+              Join as worker <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
-        </motion.div>
+          <div className="mt-8 grid max-w-xl grid-cols-3 gap-3">
+            {[
+              ["Verified", "Docs and status"],
+              ["Live", "Field tracking"],
+              ["Closed", "Timesheet flow"],
+            ].map(([title, body]) => (
+              <div key={title} className="saas-card p-3">
+                <p className="text-sm font-black">{title}</p>
+                <p className="mt-1 text-xs font-bold text-muted-foreground">{body}</p>
+              </div>
+            ))}
+          </div>
+        </motion.section>
 
-        {/* Feature Highlights */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 1 }}
-          className="mt-24 flex flex-wrap justify-center gap-8 text-sm font-bold text-foreground/50"
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.55 }}
+          className="saas-card overflow-hidden p-3"
+          aria-label="Staff Tracker workspace preview"
         >
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500"/> Verified SmartServe</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500"/> Instant Matches</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500"/> Toronto Focused</span>
-          <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500"/> GPS Check-ins</span>
-        </motion.div>
+          <div className="rounded-xl border border-border bg-[var(--sidebar)] p-3 text-white">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-[#1f2a44] text-sm font-black">ST</div>
+                <div>
+                  <p className="text-sm font-black">Toronto Ops</p>
+                  <p className="text-xs text-white/55">Active workspace</p>
+                </div>
+              </div>
+              <Bell className="h-5 w-5 text-white/70" />
+            </div>
+            <div className="mt-3 grid grid-cols-[180px_1fr] gap-3">
+              <div className="space-y-2">
+                {[
+                  { icon: Briefcase, label: "Jobs", color: "#00c875" },
+                  { icon: Users, label: "Workers", color: "#66ccff" },
+                  { icon: CalendarDays, label: "Shifts", color: "#ff642e" },
+                ].map(({ icon: Icon, label, color }) => (
+                  <div key={label} className="flex items-center gap-3 rounded-lg bg-white/10 px-3 py-2 text-sm font-bold">
+                    <Icon className="h-4 w-4" style={{ color }} />
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-xl bg-white p-4 text-[#172033]">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Shift board</p>
+                    <h2 className="text-xl font-black">Tonight&apos;s operations</h2>
+                  </div>
+                  <div className="hidden items-center rounded-lg bg-muted px-3 py-2 text-xs font-bold text-muted-foreground sm:flex">
+                    <Search className="mr-2 h-4 w-4" /> Search
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    ["Bartender", "King West", "Assigned", "#00c875"],
+                    ["Server", "Yorkville", "Open", "#579bfc"],
+                    ["Line Cook", "Distillery", "Review", "#ffcb00"],
+                    ["Security", "Queen St", "Live", "#e2445c"],
+                  ].map(([role, venue, status, color]) => (
+                    <div key={role} className="grid grid-cols-[1fr_1fr_auto] items-center gap-3 rounded-lg border border-border bg-card px-3 py-3 text-sm">
+                      <span className="font-black">{role}</span>
+                      <span className="font-bold text-muted-foreground">{venue}</span>
+                      <span className="rounded-full px-2 py-1 text-[11px] font-black text-white" style={{ backgroundColor: color }}>
+                        {status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 p-3 sm:grid-cols-4">
+            {["Post", "Approve", "Track", "Bill"].map((item) => (
+              <div key={item} className="flex items-center gap-2 text-xs font-black text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-[var(--accent)]" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </motion.section>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full py-8 text-center z-10 border-t border-secondary/30 mt-auto">
-        <p className="text-sm font-bold text-foreground/40 tracking-widest uppercase">
-          Powered by <span className="text-foreground/80">Ferrari</span>
-        </p>
-      </footer>
     </div>
   );
 }

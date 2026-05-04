@@ -1,8 +1,6 @@
 "use client";
 
-import {
-  CalendarDays, DollarSign, User, LogOut, Bell, Search
-} from "lucide-react";
+import { Bell, CalendarDays, DollarSign, LogOut, Search, User, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -11,10 +9,10 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
 
   const navigation = [
-    { name: "My Dashboard", href: "/worker/dashboard", icon: CalendarDays },
-    { name: "Browse Shifts", href: "/worker/shifts", icon: Search },
-    { name: "Earnings", href: "/worker/earnings", icon: DollarSign },
-    { name: "My Profile", href: "/worker/profile", icon: User },
+    { name: "Today", href: "/worker/dashboard", icon: CalendarDays, accent: "#579bfc" },
+    { name: "Browse", href: "/worker/shifts", icon: Search, accent: "#00c875" },
+    { name: "Earnings", href: "/worker/earnings", icon: DollarSign, accent: "#ffcb00" },
+    { name: "Profile", href: "/worker/profile", icon: User, accent: "#a25ddc" },
   ];
 
   const handleLogout = async () => {
@@ -23,98 +21,144 @@ export default function WorkerLayout({ children }: { children: React.ReactNode }
     router.push("/login/worker");
   };
 
+  const activeSection = navigation.find((item) => item.href === pathname)?.name || "Worker Portal";
+
   return (
-    <div className="min-h-screen bg-background flex font-sans">
-      {/* Sidebar */}
-      <aside className="w-64 border-r glass hidden md:flex flex-col z-20">
-        <div className="h-20 flex items-center px-6 border-b border-secondary/50">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground font-black text-sm shadow-lg shadow-primary/20">
-              ST
+    <div className="min-h-screen bg-background text-foreground mobile-safe-bottom md:flex md:pb-0">
+      <aside className="hidden w-60 shrink-0 flex-col bg-[var(--sidebar)] text-[var(--sidebar-foreground)] md:flex">
+        <div className="p-3">
+          <Link href="/worker/dashboard" className="flex items-center gap-2 rounded-lg bg-white/8 px-2.5 py-2.5 hover:bg-white/12">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-sm text-[#1f2a44] font-black">ST</div>
+            <div>
+              <p className="text-sm font-black leading-tight">Worker Portal</p>
+              <p className="text-xs text-white/55">Shift workspace</p>
             </div>
-            <span className="font-bold text-xl tracking-tight text-foreground">Worker Portal</span>
           </Link>
         </div>
 
-        <div className="flex-1 py-8 px-4 space-y-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                    : "text-foreground/70 hover:bg-secondary/50 hover:text-foreground"
-                }`}
-              >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </Link>
-            );
-          })}
+        <div className="px-3 pb-3">
+          <div className="rounded-lg border border-white/10 bg-white/7 p-2.5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent)] text-sm font-black text-white">
+                JD
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold">Ready for shifts</p>
+                <p className="truncate text-xs text-white/55">Verification workspace</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="p-4 border-t border-secondary/50">
+        <nav className="flex-1 px-2.5">
+          <p className="px-2.5 pb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">My boards</p>
+          <div className="space-y-1">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-bold ${
+                    isActive ? "bg-white text-[#172033]" : "text-white/72 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <span className="h-5 w-1 rounded-full" style={{ backgroundColor: item.accent, opacity: isActive ? 1 : 0.55 }} />
+                  <item.icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div className="p-3">
           <button
             type="button"
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-red-500 hover:bg-red-500/10 transition-all font-bold"
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-bold text-white/72 hover:bg-white/10 hover:text-white"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="h-5 w-5" />
             Log out
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Mobile Header */}
-        <header className="md:hidden flex items-center justify-between p-4 border-b border-secondary/50 bg-background/80 backdrop-blur-md sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-black text-sm">
-              ST
+      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-20 border-b border-border bg-card/86 backdrop-blur-xl">
+          <div className="flex h-14 items-center justify-between gap-3 px-3 md:px-6">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-muted-foreground md:text-xs">Worker workspace</p>
+              <h2 className="truncate text-lg font-black tracking-tight md:text-xl">{activeSection}</h2>
             </div>
-            <span className="font-bold">Portal</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Bell className="w-5 h-5" />
-            <button type="button" onClick={handleLogout} className="text-red-500"><LogOut className="w-5 h-5" /></button>
-          </div>
-        </header>
-
-        {/* Top Header (Desktop) */}
-        <header className="hidden md:flex h-20 border-b glass items-center justify-between px-8 z-10">
-          <h2 className="text-xl font-bold">
-            {navigation.find(n => n.href === pathname)?.name || "Dashboard"}
-          </h2>
-          <div className="flex items-center gap-6">
-            <button className="relative text-foreground/70 hover:text-foreground transition-colors">
-              <Bell className="w-6 h-6" />
-              <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background" />
-            </button>
-            <div className="flex items-center gap-4 border-l border-secondary pl-6">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary border border-primary/20">
-                JD
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center rounded-lg border border-border bg-muted px-3 py-1.5 text-sm font-bold text-muted-foreground sm:flex">
+                <WalletCards className="mr-2 h-4 w-4 text-[var(--accent)]" />
+                Gross pay tracker
               </div>
+              <Link
+                href="/worker/shifts"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-black text-white md:hidden"
+              >
+                <Search className="h-4 w-4" />
+                Find shifts
+              </Link>
               <button
                 type="button"
-                onClick={handleLogout}
-                className="text-red-500 hover:text-red-600 transition-colors flex items-center gap-2 text-sm font-bold"
+                className="relative hidden h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground sm:flex"
+                aria-label="Notifications"
               >
-                <LogOut className="w-4 h-4" />
-                Logout
+                <Bell className="h-5 w-5" />
+                <span className="absolute right-2.5 top-2.5 h-2.5 w-2.5 rounded-full bg-[var(--accent)] ring-2 ring-card" />
+              </button>
+              <button type="button" onClick={handleLogout} className="md:hidden rounded-lg border border-border bg-card p-1.5 text-[var(--danger)]">
+                <LogOut className="h-5 w-5" />
               </button>
             </div>
           </div>
+          <div className="border-t border-border/70 px-3 py-2 md:hidden">
+            <div className="mobile-command-scroll flex gap-2 overflow-x-auto">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-black ${
+                      isActive ? "border-primary bg-primary text-white" : "border-border bg-card text-muted-foreground"
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.accent }} />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </header>
 
-        {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-secondary/5">
+        <div className="flex-1 overflow-auto px-3 py-3 md:px-6 md:py-5">
           {children}
         </div>
       </main>
+
+      <nav className="mobile-bottom-nav fixed inset-x-3 z-30 grid grid-cols-4 gap-1 rounded-xl border border-border bg-card/95 p-1 shadow-lg backdrop-blur-xl md:hidden">
+        {navigation.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-black ${
+                isActive ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="max-w-full truncate">{item.name}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

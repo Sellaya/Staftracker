@@ -332,17 +332,21 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
+      <div className="saas-card overflow-hidden">
+        <div className="flex flex-col gap-4 border-b border-border bg-card px-4 py-4 md:px-6 md:py-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary md:text-xs">
+            Staff Tracker OS
+          </div>
+          <h1 className="text-2xl font-black tracking-tight md:text-3xl">
             {isClientUser
               ? "Client Account Details"
               : isAdmin
                 ? "Admin overview"
                 : "Field Work & Hours"}
           </h1>
-          <p className="text-foreground/70 mt-1">
+          <p className="mt-1 max-w-2xl text-sm font-bold leading-relaxed text-muted-foreground">
             {isClientUser
               ? "Overview of your jobs, venues, shifts, and invoices."
               : isAdmin
@@ -350,24 +354,24 @@ export default function Dashboard() {
                 : "Live tracking of ongoing jobs, worker hours, and field statuses."}
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex gap-2 overflow-x-auto mobile-command-scroll md:flex-wrap md:gap-3">
           {isAdmin && adminKpis && adminKpis.workersDocPending > 0 && (
             <Link
               href="/dashboard/documents"
-              className="glass px-4 py-2 rounded-xl flex items-center gap-2 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 transition-colors"
+              className="saas-chip border-amber-500/30 bg-amber-500/10 text-amber-700"
             >
               <FileWarning className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-medium">
+              <span>
                 {adminKpis.workersDocPending} document{adminKpis.workersDocPending === 1 ? "" : "s"} to review
               </span>
             </Link>
           )}
-          <div className="glass px-4 py-2 rounded-xl flex items-center gap-2 border border-secondary">
+          <div className="saas-chip">
             <span className="relative flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
-            <span className="text-sm font-medium">
+            <span>
               {isAdmin && adminKpis
                 ? `${adminKpis.activeShifts} active in field`
                 : `Tracking ${ongoingShifts.length} Active Jobs`}
@@ -375,27 +379,29 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      </div>
 
       {isAdmin && adminStatCards ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
           {adminStatCards.map((stat, i) => {
             const inner = (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="glass p-5 rounded-2xl border border-secondary bg-background/60 hover:bg-secondary/10 transition-all h-full"
+                className="saas-card workflow-lane h-full p-4 transition-all hover:-translate-y-0.5 hover:shadow-xl md:p-5"
+                style={{ borderLeftColor: stat.color.includes("sky") ? "#579bfc" : stat.color.includes("violet") ? "#a25ddc" : stat.color.includes("teal") ? "#00c875" : stat.color.includes("amber") ? "#ffcb00" : "#006bff" }}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color}`}>
                     <stat.icon size={20} />
                   </div>
                 </div>
-                <p className="text-[11px] font-bold text-foreground/50 uppercase tracking-widest">{stat.name}</p>
+                <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">{stat.name}</p>
                 <div className="flex items-baseline gap-1 mt-1.5">
-                  <span className="text-3xl font-black tracking-tight">{stat.value}</span>
+                  <span className="text-2xl font-black tracking-tight md:text-3xl">{stat.value}</span>
                 </div>
-                <p className="text-xs font-medium text-foreground/40 mt-2">{stat.subtitle}</p>
+                <p className="text-xs font-bold text-muted-foreground mt-2">{stat.subtitle}</p>
               </motion.div>
             );
             return (
@@ -406,14 +412,14 @@ export default function Dashboard() {
           })}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-4">
           {hourStats.map((stat, i) => (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
               key={stat.name}
-              className="glass p-5 rounded-2xl border border-secondary bg-background/60 hover:bg-secondary/10 transition-all"
+              className="saas-card workflow-lane p-4 transition-all hover:-translate-y-0.5 hover:shadow-xl md:p-5"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className={`p-2.5 rounded-xl ${stat.bg} ${stat.color}`}>
@@ -421,29 +427,29 @@ export default function Dashboard() {
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-bold text-foreground/50 uppercase tracking-widest">{stat.name}</p>
+                <p className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">{stat.name}</p>
                 <div className="flex items-baseline gap-1 mt-1.5">
                   {stat.prefix && <span className="text-xl font-black text-foreground/50">{stat.prefix}</span>}
-                  <span className="text-3xl font-black tracking-tight">{stat.value}</span>
+                  <span className="text-2xl font-black tracking-tight md:text-3xl">{stat.value}</span>
                   {stat.suffix && <span className="text-xs font-bold text-foreground/50">{stat.suffix}</span>}
                 </div>
-                <p className="text-xs font-medium text-foreground/40 mt-2">{stat.subtitle}</p>
+                <p className="text-xs font-bold text-muted-foreground mt-2">{stat.subtitle}</p>
               </div>
             </motion.div>
           ))}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold flex items-center gap-2">
+            <h2 className="text-base font-black flex items-center gap-2 md:text-lg">
               <Activity className="w-5 h-5 text-primary" />{" "}
               {isClientUser ? "Live Shift Activity" : "Active Field Operations"}
             </h2>
             <span className="text-xs font-bold text-foreground/50">{ongoingShifts.length} active</span>
           </div>
-          <div className="rounded-2xl border border-secondary bg-background/50 p-4 space-y-3">
+          <div className="saas-card p-4 space-y-3">
             {ongoingShifts.length === 0 && (
               <div className="p-10 border border-dashed border-secondary rounded-2xl text-center text-foreground/50 italic">
                 No active shifts right now.
@@ -455,7 +461,7 @@ export default function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
                 key={shift.id}
-                className="p-4 rounded-xl border border-secondary bg-background/80 flex items-center justify-between"
+                className="rounded-xl border border-border bg-card p-4 flex items-center justify-between hover:bg-muted/45"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">
@@ -480,10 +486,10 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2 text-red-500">
+          <h2 className="text-base font-black flex items-center gap-2 text-red-500 md:text-lg">
             <AlertTriangle className="w-5 h-5" /> {isClientUser ? "Account Alerts" : "Operational Alerts"}
           </h2>
-          <div className="rounded-2xl border border-secondary bg-background/50 p-4 space-y-3">
+          <div className="saas-card p-4 space-y-3">
             {alerts.map((alert, i) => (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
@@ -513,13 +519,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .glass {
-          background: rgba(var(--background-rgb), 0.5);
-          backdrop-filter: blur(10px);
-        }
-      `}</style>
     </div>
   );
 }
